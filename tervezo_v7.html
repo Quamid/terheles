@@ -16,7 +16,6 @@
             --ok: #10b981;
             --w: #f59e0b;
             --err: #ef4444;
-            --bg: #f0f4ff;
             --card: rgba(255, 255, 255, .92);
             --t: #1e293b
         }
@@ -30,7 +29,7 @@
         body {
             font-family: 'Outfit', sans-serif;
             background: linear-gradient(135deg, #eef2ff, #e0e7ff 50%, #c7d2fe);
-            padding: 24px;
+            padding: 24px 24px 80px;
             min-height: 100vh;
             color: var(--t)
         }
@@ -61,6 +60,13 @@
             margin-bottom: 16px
         }
 
+        @media(max-width:600px) {
+            .hdr {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+
         h1 {
             font-size: 22px;
             background: linear-gradient(to right, var(--p), var(--s));
@@ -84,7 +90,8 @@
             cursor: pointer;
             font-weight: 700;
             font-size: 13px;
-            transition: .2s
+            transition: .2s;
+            font-family: inherit
         }
 
         .btn:hover {
@@ -98,13 +105,24 @@
 
         .row2 {
             display: grid;
-            grid-template-columns: 1fr 320px;
+            grid-template-columns: 1fr 300px;
             gap: 20px
         }
 
         @media(max-width:1100px) {
             .row2 {
                 grid-template-columns: 1fr
+            }
+        }
+
+        @media(max-width:600px) {
+            body {
+                padding: 12px;
+            }
+
+            .gc {
+                padding: 14px;
+                border-radius: 12px;
             }
         }
 
@@ -139,8 +157,7 @@
         .panel {
             background: rgba(248, 250, 252, .6);
             border-radius: 14px;
-            padding: 18px;
-            margin-bottom: 0
+            padding: 18px
         }
 
         .panel h3 {
@@ -166,7 +183,8 @@
             border-radius: 8px;
             border: 1px solid #e2e8f0;
             outline: none;
-            font-size: 13px
+            font-size: 13px;
+            font-family: inherit
         }
 
         .ti input:focus {
@@ -185,6 +203,93 @@
             margin-bottom: 8px
         }
 
+        /* Lag profiles section */
+        .lag-section {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-top: 8px
+        }
+
+        @media(max-width:900px) {
+            .lag-section {
+                grid-template-columns: repeat(2, 1fr)
+            }
+        }
+
+        @media(max-width:500px) {
+            .lag-section {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .lag-desc {
+            font-size: 10px;
+            color: #94a3b8;
+            margin-top: 3px;
+        }
+
+        .lag-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 14px;
+            border: 1px solid #f1f5f9
+        }
+
+        .lag-card h4 {
+            font-size: 12px;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 8px
+        }
+
+        .lag-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            height: 50px
+        }
+
+        .lag-bar {
+            flex: 1;
+            background: var(--p);
+            border-radius: 2px 2px 0 0;
+            min-height: 1px;
+            opacity: .7;
+            position: relative;
+            cursor: default
+        }
+
+        .lag-bar:hover {
+            opacity: 1
+        }
+
+        .lag-bar:hover::after {
+            content: attr(data-tip);
+            position: absolute;
+            bottom: calc(100% + 4px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: #fff;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-size: 9px;
+            white-space: nowrap;
+            z-index: 10
+        }
+
+        .lag-peak {
+            font-size: 10px;
+            color: #64748b;
+            margin-top: 6px
+        }
+
+        .lag-peak b {
+            color: var(--p)
+        }
+
+        /* Table */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -210,7 +315,8 @@
         }
 
         .wknd {
-            background: #fef2f2 !important
+            background: #f8fafc !important;
+            color: #94a3b8
         }
 
         .real {
@@ -223,6 +329,10 @@
 
         .wed-row {
             border-left: 3px solid var(--w)
+        }
+
+        .fri-row {
+            border-left: 3px solid #a78bfa
         }
 
         .badge {
@@ -281,28 +391,16 @@
             background: #fff
         }
 
-        .lag-bars {
+        .action-bar {
             display: flex;
-            align-items: flex-end;
-            gap: 2px;
-            height: 40px;
-            margin-top: 6px
+            justify-content: center;
+            padding: 18px 0;
         }
 
-        .lag-bar {
-            width: 8px;
-            background: var(--p);
-            border-radius: 2px 2px 0 0;
-            min-height: 1px;
-            opacity: .7
-        }
-
-        .ch-label {
-            font-size: 10px;
-            font-weight: 600;
-            color: #64748b;
-            margin-top: 10px;
-            margin-bottom: 2px
+        .action-bar .btn {
+            padding: 14px 40px;
+            font-size: 15px;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, .3);
         }
     </style>
 </head>
@@ -315,7 +413,6 @@
                 <div class="ctrls">
                     <input type="file" id="fi" style="display:none" accept=".xlsx,.xls">
                     <button class="btn" onclick="document.getElementById('fi').click()">📁 Excel betöltés</button>
-                    <button class="btn btn-go" onclick="calculate()">🔄 Számítás</button>
                 </div>
             </div>
             <div class="row2">
@@ -342,25 +439,32 @@
                             <div class="sv" id="sKap">—</div>
                         </div>
                         <div class="sc">
-                            <div class="sl">Sze boost</div>
+                            <div class="sl">Sze boost (CC/Ü/V)</div>
                             <div class="sv" id="sWed">—</div>
                         </div>
                     </div>
                     <div id="chartBox"><canvas id="chart"></canvas></div>
+                    <div class="lag-section" id="lagSection"></div>
                 </div>
                 <div class="panel" id="tunePanel">
                     <h3>⚙️ Finomhangolás</h3>
+                    <div class="ti"><label>Lag csillapítás (0.2–1.5)</label><input type="number" id="lagDamp"
+                            value="0.4" step="0.05" min="0.1" max="2"></div>
                     <div class="ti"><label>Opt. eltérés %</label><input type="number" id="optP" value="15"></div>
                     <div class="ti"><label>Pes. eltérés %</label><input type="number" id="pesP" value="15"></div>
                     <div class="ti"><label>Előrejelzés napok</label><input type="number" id="fDays" value="21" min="7"
                             max="60"></div>
                     <div class="ti"><label>Visszatekintés (nap)</label><input type="number" id="histDays" value="7"
-                            min="3" max="14"></div>
-                    <div id="lagViz"></div>
-                    <div class="tip">💡 A modell 1 év adatból tanulja meg a kiküldés → csatorna lag-profilt. Szerdai
-                        hosszított nap automatikusan figyelembe véve.</div>
+                            min="3" max="365"></div>
+                    <div class="tip">💡 <b>Lag csillapítás:</b> Ha a backlog túl magasra jósol, csökkentsd (pl. 0.3). Ha
+                        alul, növeld (pl. 0.8).<br><br>📌 Szerdai hosszított nap (CC/ÜSZI/Video) és pénteki rövidített
+                        nap (ÜSZI/Video −20%) automatikusan figyelembe véve.<br><br>📊 <b>Lag sorrend:</b> CC (1-2 nap)
+                        → ÜSZI/Video (2-4 nap) → Beérkező (4-7 nap)</div>
                 </div>
             </div>
+        </div>
+        <div class="action-bar">
+            <button class="btn" onclick="calculate()">Számítás futtatása</button>
         </div>
         <div class="gc">
             <div style="overflow-x:auto;border-radius:14px">
@@ -387,7 +491,8 @@
 
     <script>
         const CH = ['beerkezett', 'cc', 'uszi', 'video'];
-        const CH_NAME = { beerkezett: 'Beérkező', cc: 'CC', uszi: 'ÜSZI', video: 'Video' };
+        const CH_NAME = { beerkezett: 'Beérkező', cc: 'CC Hívás', uszi: 'ÜSZI', video: 'Video' };
+        const CH_COLOR = { beerkezett: '#6366f1', cc: '#ec4899', uszi: '#f59e0b', video: '#10b981' };
         const DOW = ['V', 'H', 'K', 'Sze', 'Cs', 'P', 'Szo'];
         const MAX_LAG = 14;
 
@@ -457,28 +562,50 @@
                     if (we.length > 0) wkndBase = we.reduce((s, x) => s + x[ch], 0) / we.length;
                 }
 
-                // 3) Lag profile via regression on residuals
-                const lp = new Array(MAX_LAG + 1).fill(0);
-                for (let k = 1; k <= MAX_LAG; k++) {
-                    let sXY = 0, sXX = 0, n = 0;
-                    wd.forEach(x => {
+                // 3) Learn total lag magnitude from data (regression)
+                let totalMag = 0, magCount = 0;
+                wd.forEach(x => {
+                    // Average the residual / average_sent ratio across all lags
+                    const residual = x[ch] - (base[x.date.getDay()] || 0);
+                    let laggedSendSum = 0, lagCount = 0;
+                    for (let k = 1; k <= MAX_LAG; k++) {
                         const past = dateMap[ds(addDays(x.date, -k))];
-                        if (past && past.kikuldott > 50) {
-                            const residual = x[ch] - (base[x.date.getDay()] || 0);
-                            sXY += past.kikuldott * residual;
-                            sXX += past.kikuldott * past.kikuldott;
-                            n++;
-                        }
-                    });
-                    if (n > 5) lp[k] = Math.max(0, sXY / sXX);
+                        if (past && past.kikuldott > 50) { laggedSendSum += past.kikuldott; lagCount++; }
+                    }
+                    if (lagCount > 3 && laggedSendSum > 0) {
+                        totalMag += residual / (laggedSendSum / lagCount);
+                        magCount++;
+                    }
+                });
+                let learnedMag = magCount > 10 ? Math.max(0, totalMag / magCount) : 0;
+                // Minimum fallback ha az adatból nem tanul eleget
+                const minMag = { cc: 0.005, uszi: 0.003, video: 0.004, beerkezett: 0.01 };
+                if (learnedMag < (minMag[ch] || 0)) learnedMag = minMag[ch] || 0.005;
+
+                // 4) Domain-constrained shape templates
+                // CC: fastest (peak lag 1), ÜSZI: medium (peak 3), Video: medium (peak 2-3), Beérkező: slowest (peak 5)
+                const shapes = {
+                    cc: k => Math.pow(k, 0.3) * Math.exp(-k / 1.2),   // peak ~1d, gone by ~4d
+                    uszi: k => Math.pow(Math.max(0, k - 1), 1.0) * Math.exp(-(k - 1) / 2.5), // peak ~3d
+                    video: k => Math.pow(Math.max(0, k - 0.5), 0.8) * Math.exp(-(k - 0.5) / 2.0), // peak ~2d
+                    beerkezett: k => Math.pow(Math.max(0, k - 2), 1.5) * Math.exp(-(k - 2) / 3.0)  // peak ~5d, long tail
+                };
+
+                // Generate normalized shape, then scale by learned magnitude
+                const rawShape = new Array(MAX_LAG + 1).fill(0);
+                let shapeSum = 0;
+                for (let k = 1; k <= MAX_LAG; k++) {
+                    rawShape[k] = shapes[ch](k);
+                    shapeSum += rawShape[k];
+                }
+                const lag = new Array(MAX_LAG + 1).fill(0);
+                if (shapeSum > 0) {
+                    for (let k = 1; k <= MAX_LAG; k++) {
+                        lag[k] = (rawShape[k] / shapeSum) * learnedMag;
+                    }
                 }
 
-                // 4) Smooth lag profile (3-point moving average)
-                const smooth = [...lp];
-                for (let k = 2; k < MAX_LAG; k++) smooth[k] = (lp[k - 1] + lp[k] + lp[k + 1]) / 3;
-                for (let k = 1; k <= MAX_LAG; k++) smooth[k] = Math.max(0, smooth[k]);
-
-                model[ch] = { base, wkndBase, lag: smooth };
+                model[ch] = { base, wkndBase, lag };
             });
 
             // Stats display
@@ -490,7 +617,7 @@
             const kapAvg = raw.filter(x => x.date.getDay() >= 1 && x.date.getDay() <= 5 && x.kapacitas > 0);
             document.getElementById('sKap').textContent = kapAvg.length ? Math.round(kapAvg.reduce((s, x) => s + x.kapacitas, 0) / kapAvg.length) : '-';
 
-            // Wednesday boost for ÜSZI/CC/Video
+            // Wednesday boost
             const wedBoosts = [];
             ['cc', 'uszi', 'video'].forEach(ch => {
                 const avg5 = Object.values(model[ch].base).reduce((a, b) => a + b, 0) / 5;
@@ -498,18 +625,40 @@
             });
             document.getElementById('sWed').textContent = wedBoosts.length ? '+' + Math.round(wedBoosts.reduce((a, b) => a + b, 0) / wedBoosts.length) + '%' : '—';
 
-            // Lag visualization
-            let viz = '';
+            // Lag profile cards
+            renderLagCards();
+        }
+
+        // Csatorna-specifikus lag leírások
+        const LAG_DESC = {
+            cc: 'Lecs. kezdete: ~1 nap a kiküldéstől',
+            uszi: 'Lecs. kezdete: ~2-3 nap a kiküldéstől',
+            video: 'Lecs. kezdete: ~2 nap a kiküldéstől',
+            beerkezett: 'Lecs. kezdete: ~3-5 nap a kiküldéstől'
+        };
+
+        function renderLagCards() {
+            const sec = document.getElementById('lagSection');
+            let html = '';
             CH.forEach(ch => {
-                const mx = Math.max(...model[ch].lag.slice(1));
-                viz += `<div class="ch-label">${CH_NAME[ch]} lag-profil:</div><div class="lag-bars">`;
+                if (!model[ch]) return;
+                const lag = model[ch].lag;
+                const mx = Math.max(...lag.slice(1));
+                const peakK = lag.indexOf(mx, 1);
+
+                html += `<div class="lag-card">
+   <h4 style="color:${CH_COLOR[ch]}">${CH_NAME[ch]}</h4>
+   <div class="lag-bars">`;
                 for (let k = 1; k <= MAX_LAG; k++) {
-                    const h = mx > 0 ? Math.round(model[ch].lag[k] / mx * 36) : 0;
-                    viz += `<div class="lag-bar" style="height:${Math.max(1, h)}px" title="Lag ${k}: ${(model[ch].lag[k] * 100).toFixed(2)}%"></div>`;
+                    const h = mx > 0 ? Math.round(lag[k] / mx * 46) : 0;
+                    html += `<div class="lag-bar" style="height:${Math.max(1, h)}px;background:${CH_COLOR[ch]}" data-tip="${k}. nap: ${(lag[k] * 100).toFixed(2)}%"></div>`;
                 }
-                viz += '</div>';
+                html += `</div>
+   <div class="lag-peak">Csúcs hatás: <b>${peakK}. nap</b> a kiküldéstől</div>
+   <div class="lag-desc">${LAG_DESC[ch]}</div>
+  </div>`;
             });
-            document.getElementById('lagViz').innerHTML = viz;
+            sec.innerHTML = html;
         }
 
         function renderTable() {
@@ -527,16 +676,20 @@
                 const isPast = d <= lastReal;
                 const rd = dateMap[dStr];
                 const tr = document.createElement('tr');
-                if (isWe) tr.className = 'wknd'; else if (isPast) tr.className = 'real'; else tr.className = 'pred';
+                if (isWe) tr.className = 'wknd';
+                else if (isPast) tr.className = 'real';
+                else tr.className = 'pred';
                 if (dw === 3 && !isWe) tr.classList.add('wed-row');
+                if (dw === 5 && !isWe) tr.classList.add('fri-row');
 
                 const badge = isPast ? '<span class="badge b-r">TÉNY</span>' : '<span class="badge b-p">JÓSLAT</span>';
                 const kik = rd ? rd.kikuldott : 0;
                 const kap = rd && isPast ? rd.kapacitas : (isWe ? 0 : defKap);
 
+                const fmtDate = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
                 tr.innerHTML = `
-   <td style="text-align:left;font-weight:600">${d.toLocaleDateString('hu-HU', { month: 'short', day: '2-digit' })}</td>
-   <td style="font-weight:600;color:${dw === 3 ? 'var(--w)' : 'inherit'}">${DOW[dw]}${dw === 3 ? ' 📌' : ''}</td>
+   <td style="text-align:left;font-weight:600">${fmtDate}</td>
+   <td style="font-weight:600;color:${dw === 3 ? 'var(--w)' : dw === 5 ? '#8b5cf6' : 'inherit'}">${DOW[dw]}</td>
    <td>${badge}</td>
    <td><input class="tinp" type="number" id="k-${dStr}" value="${kik}"></td>
    <td id="be-${dStr}">${rd && isPast ? rd.beerkezett : '—'}</td>
@@ -551,12 +704,9 @@
 
         function getSentMap() {
             const m = {};
-            // Historical data
             raw.forEach(x => m[ds(x.date)] = x.kikuldott);
-            // Override with table inputs (user may have edited)
             document.querySelectorAll('[id^="k-"]').forEach(inp => {
-                const dStr = inp.id.substring(2);
-                m[dStr] = parseInt(inp.value) || 0;
+                m[inp.id.substring(2)] = parseInt(inp.value) || 0;
             });
             return m;
         }
@@ -568,12 +718,37 @@
 
             let val = isWe ? model[ch].wkndBase : (model[ch].base[dw] || 0);
 
-            for (let k = 1; k <= MAX_LAG; k++) {
-                const past = ds(addDays(date, -k));
-                const sent = sentMap[past] || 0;
-                val += model[ch].lag[k] * sent;
+            // Péntek rövidebb nap ÜSZI és Video esetén (-20%)
+            if (dw === 5 && (ch === 'uszi' || ch === 'video')) {
+                val *= 0.80;
+            }
+
+            const damp = parseFloat(document.getElementById('lagDamp').value) || 0.4;
+
+            if (ch === 'beerkezett') {
+                // V5-stílusú beérkező számítás: egyszerű exponenciális lecsengés
+                // Ez adta a legjobb backlog becslést az eredeti kódban
+                const lagCoeff = 0.03 * damp;
+                let lagImpact = 0;
+                for (let k = 1; k <= MAX_LAG; k++) {
+                    const past = ds(addDays(date, -k));
+                    const sent = sentMap[past] || 0;
+                    lagImpact += sent * Math.exp(-k / 5) * lagCoeff;
+                }
+                val += lagImpact;
+            } else {
+                // CC, ÜSZI, Video: domain-constrained lag profilok
+                for (let k = 1; k <= MAX_LAG; k++) {
+                    const past = ds(addDays(date, -k));
+                    const sent = sentMap[past] || 0;
+                    val += model[ch].lag[k] * sent * damp;
+                }
             }
             return Math.max(0, Math.round(val));
+        }
+
+        function fmtD(d) {
+            return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
         }
 
         function calculate() {
@@ -581,15 +756,27 @@
             const optF = 1 - (parseFloat(document.getElementById('optP').value) || 15) / 100;
             const pesF = 1 + (parseFloat(document.getElementById('pesP').value) || 15) / 100;
             const fDays = parseInt(document.getElementById('fDays').value) || 21;
+            const histDays = parseInt(document.getElementById('histDays').value) || 7;
             const sentMap = getSentMap();
 
+            // --- Historikus backlog adatok összegyűjtése a diagramhoz ---
+            const histLabels = [], histBL = [];
+            const histStart = addDays(lastReal, -histDays);
+            for (let d = new Date(histStart); d <= lastReal; d = addDays(d, 1)) {
+                const rd = dateMap[ds(d)];
+                if (rd && rd.backlog !== null) {
+                    histLabels.push(fmtD(d));
+                    histBL.push(rd.backlog);
+                }
+            }
+
+            // --- Jóslat számítás ---
             let bl = lastBL, blO = lastBL, blP = lastBL;
-            const labels = [], blData = [], blOData = [], blPData = [];
+            const predLabels = [], predBL = [], predBLO = [], predBLP = [];
             const start = addDays(lastReal, 1), end = addDays(lastReal, fDays);
 
             for (let d = new Date(start); d <= end; d = addDays(d, 1)) {
                 const dStr = ds(d);
-                // Also capture any manually added future sends
                 const kikInp = document.getElementById('k-' + dStr);
                 if (kikInp) sentMap[dStr] = parseInt(kikInp.value) || 0;
 
@@ -615,25 +802,122 @@
                 if (viEl) viEl.textContent = video;
                 if (blEl) blEl.innerHTML = `<div class="bl-main">${bl}</div><div class="bl-range"><span class="opt">↓${blO}</span><span class="pes">↑${blP}</span></div>`;
 
-                labels.push(d.toLocaleDateString('hu-HU', { month: 'short', day: '2-digit' }));
-                blData.push(bl); blOData.push(blO); blPData.push(blP);
+                predLabels.push(fmtD(d));
+                predBL.push(bl); predBLO.push(blO); predBLP.push(blP);
             }
-            drawChart(labels, blData, blOData, blPData);
+
+            // --- Diagram: historikus + jóslat összefűzés ---
+            const allLabels = [...histLabels, ...predLabels];
+            const hLen = histLabels.length;
+            const pLen = predLabels.length;
+
+            // Valós backlog: historikus dátumokon van érték, jóslatnál null
+            const realLine = [...histBL, ...new Array(pLen).fill(null)];
+            // Jóslat backlog: historikusnál null, de az utolsó valós pontot is tartalmazza az átmenethez
+            const predLine = [...new Array(Math.max(0, hLen - 1)).fill(null), hLen > 0 ? histBL[hLen - 1] : lastBL, ...predBL];
+            const optLine = [...new Array(Math.max(0, hLen - 1)).fill(null), hLen > 0 ? histBL[hLen - 1] : lastBL, ...predBLO];
+            const pesLine = [...new Array(Math.max(0, hLen - 1)).fill(null), hLen > 0 ? histBL[hLen - 1] : lastBL, ...predBLP];
+
+            drawChart(allLabels, realLine, predLine, optLine, pesLine);
         }
 
-        function drawChart(labels, main, opt, pes) {
+        function drawChart(labels, real, pred, opt, pes) {
             const ctx = document.getElementById('chart').getContext('2d');
             if (myChart) myChart.destroy();
             myChart = new Chart(ctx, {
-                type: 'line', data: {
-                    labels, datasets: [
-                        { label: 'Pesszimista', data: pes, borderColor: 'rgba(239,68,68,.4)', backgroundColor: 'rgba(239,68,68,.06)', fill: '+1', borderDash: [4, 4], borderWidth: 1.5, pointRadius: 0, tension: .4 },
-                        { label: 'Backlog', data: main, borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,.1)', fill: false, borderWidth: 3, pointRadius: 3, pointBackgroundColor: '#6366f1', tension: .4 },
-                        { label: 'Optimista', data: opt, borderColor: 'rgba(16,185,129,.4)', backgroundColor: 'rgba(16,185,129,.06)', fill: '-1', borderDash: [4, 4], borderWidth: 1.5, pointRadius: 0, tension: .4 }
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Valós backlog',
+                            data: real,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16,185,129,.08)',
+                            fill: false,
+                            borderWidth: 2.5,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#10b981',
+                            tension: .3,
+                            spanGaps: false
+                        },
+                        {
+                            label: 'Pesszimista',
+                            data: pes,
+                            borderColor: 'rgba(239,68,68,.35)',
+                            backgroundColor: 'rgba(239,68,68,.05)',
+                            fill: '+1',
+                            borderDash: [4, 4],
+                            borderWidth: 1.5,
+                            pointRadius: 0,
+                            tension: .4,
+                            spanGaps: false
+                        },
+                        {
+                            label: 'Várható backlog',
+                            data: pred,
+                            borderColor: '#6366f1',
+                            backgroundColor: 'rgba(99,102,241,.08)',
+                            fill: false,
+                            borderWidth: 3,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#6366f1',
+                            tension: .4,
+                            spanGaps: false
+                        },
+                        {
+                            label: 'Optimista',
+                            data: opt,
+                            borderColor: 'rgba(16,185,129,.35)',
+                            backgroundColor: 'rgba(16,185,129,.05)',
+                            fill: '-1',
+                            borderDash: [4, 4],
+                            borderWidth: 1.5,
+                            pointRadius: 0,
+                            tension: .4,
+                            spanGaps: false
+                        }
                     ]
-                }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }, scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false }, ticks: { font: { size: 10 } } } } }
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { size: 11 } } }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                        x: { grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 45 } }
+                    }
+                }
             });
         }
+
+        // Auto-recalculate a finomhangolás és táblázat inputjainál
+        let recalcTimer = null;
+        function scheduleRecalc() {
+            clearTimeout(recalcTimer);
+            recalcTimer = setTimeout(() => {
+                if (lastReal && model.beerkezett) calculate();
+            }, 600);
+        }
+        // Tuning panel inputok
+        ['lagDamp', 'optP', 'pesP', 'fDays', 'histDays'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', () => {
+                if (id === 'fDays' || id === 'histDays') {
+                    // Táblázat újraépítés is kell
+                    clearTimeout(recalcTimer);
+                    recalcTimer = setTimeout(() => {
+                        if (lastReal) { renderTable(); calculate(); }
+                    }, 800);
+                } else {
+                    scheduleRecalc();
+                }
+            });
+        });
+        // Táblázat inputok (kiküldött, kapacitás) - delegált eseménykezelő
+        document.getElementById('tb').addEventListener('input', scheduleRecalc);
     </script>
 </body>
 
