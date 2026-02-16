@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="hu">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ÜKO Tervező v7 — Cross-Correlation Forecaster</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --p: #6366f1;
+            --pd: #4f46e5;
+            --s: #ec4899;
+            --ok: #10b981;
+            --w: #f59e0b;
+            --err: #ef4444;
+            --bg: #f0f4ff;
+            --card: rgba(255, 255, 255, .92);
+            --t: #1e293b
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #eef2ff, #e0e7ff 50%, #c7d2fe);
+            padding: 24px;
+            min-height: 100vh;
+            color: var(--t)
+        }
+
+        .container {
+            max-width: 1700px;
+            margin: auto
+        }
+
+        .gc {
+            background: var(--card);
+            backdrop-filter: blur(12px);
+            border-radius: 18px;
+            padding: 22px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, .06);
+            border: 1px solid rgba(255, 255, 255, .7);
+            margin-bottom: 22px
+        }
+
+        .hdr {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 16px;
+            margin-bottom: 16px
+        }
+
+        h1 {
+            font-size: 22px;
+            background: linear-gradient(to right, var(--p), var(--s));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800
+        }
+
+        .ctrls {
+            display: flex;
+            gap: 10px;
+            align-items: center
+        }
+
+        .btn {
+            background: var(--p);
+            color: #fff;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 13px;
+            transition: .2s
+        }
+
+        .btn:hover {
+            background: var(--pd);
+            transform: translateY(-1px)
+        }
+
+        .btn-go {
+            background: linear-gradient(135deg, var(--p), var(--s))
+        }
+
+        .row2 {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 20px
+        }
+
+        @media(max-width:1100px) {
+            .row2 {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .sg {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px
+        }
+
+        .sc {
+            background: #fff;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid #f1f5f9
+        }
+
+        .sl {
+            font-size: 10px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: .4px
+        }
+
+        .sv {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--p);
+            margin-top: 4px
+        }
+
+        .panel {
+            background: rgba(248, 250, 252, .6);
+            border-radius: 14px;
+            padding: 18px;
+            margin-bottom: 0
+        }
+
+        .panel h3 {
+            font-size: 15px;
+            margin-bottom: 12px
+        }
+
+        .ti {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 10px
+        }
+
+        .ti label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #475569
+        }
+
+        .ti input {
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            outline: none;
+            font-size: 13px
+        }
+
+        .ti input:focus {
+            border-color: var(--p)
+        }
+
+        .tip {
+            font-size: 11px;
+            color: #94a3b8;
+            line-height: 1.5;
+            margin-top: 12px
+        }
+
+        #chartBox {
+            height: 260px;
+            margin-bottom: 8px
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px
+        }
+
+        th {
+            background: #f8fafc;
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: 600;
+            color: #64748b;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            font-size: 11px
+        }
+
+        td {
+            padding: 10px 6px;
+            border-bottom: 1px solid #f1f5f9;
+            text-align: center
+        }
+
+        .wknd {
+            background: #fef2f2 !important
+        }
+
+        .real {
+            background: #ecfdf5
+        }
+
+        .pred {
+            background: #fffbeb
+        }
+
+        .wed-row {
+            border-left: 3px solid var(--w)
+        }
+
+        .badge {
+            padding: 3px 7px;
+            border-radius: 5px;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase
+        }
+
+        .b-r {
+            background: #d1fae5;
+            color: #065f46
+        }
+
+        .b-p {
+            background: #fef3c7;
+            color: #92400e
+        }
+
+        .bl-main {
+            font-weight: 800;
+            color: var(--p);
+            font-size: 14px
+        }
+
+        .bl-range {
+            font-size: 9px;
+            margin-top: 3px;
+            display: flex;
+            justify-content: center;
+            gap: 6px
+        }
+
+        .opt {
+            color: var(--ok)
+        }
+
+        .pes {
+            color: var(--err)
+        }
+
+        .tinp {
+            width: 68px;
+            border: none;
+            background: rgba(0, 0, 0, .04);
+            padding: 4px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 12px;
+            font-family: inherit
+        }
+
+        .tinp:focus {
+            outline: 2px solid var(--p);
+            background: #fff
+        }
+
+        .lag-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            height: 40px;
+            margin-top: 6px
+        }
+
+        .lag-bar {
+            width: 8px;
+            background: var(--p);
+            border-radius: 2px 2px 0 0;
+            min-height: 1px;
+            opacity: .7
+        }
+
+        .ch-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: #64748b;
+            margin-top: 10px;
+            margin-bottom: 2px
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="gc">
+            <div class="hdr">
+                <h1>📊 ÜKO Tervező v7 — Cross-Correlation Forecaster</h1>
+                <div class="ctrls">
+                    <input type="file" id="fi" style="display:none" accept=".xlsx,.xls">
+                    <button class="btn" onclick="document.getElementById('fi').click()">📁 Excel betöltés</button>
+                    <button class="btn btn-go" onclick="calculate()">🔄 Számítás</button>
+                </div>
+            </div>
+            <div class="row2">
+                <div>
+                    <div class="sg" id="statsP">
+                        <div class="sc">
+                            <div class="sl">Átl. Beérkező</div>
+                            <div class="sv" id="sInc">—</div>
+                        </div>
+                        <div class="sc">
+                            <div class="sl">Átl. CC</div>
+                            <div class="sv" id="sCC">—</div>
+                        </div>
+                        <div class="sc">
+                            <div class="sl">Átl. ÜSZI</div>
+                            <div class="sv" id="sUszi">—</div>
+                        </div>
+                        <div class="sc">
+                            <div class="sl">Átl. Video</div>
+                            <div class="sv" id="sVid">—</div>
+                        </div>
+                        <div class="sc">
+                            <div class="sl">Átl. Kapacitás</div>
+                            <div class="sv" id="sKap">—</div>
+                        </div>
+                        <div class="sc">
+                            <div class="sl">Sze boost</div>
+                            <div class="sv" id="sWed">—</div>
+                        </div>
+                    </div>
+                    <div id="chartBox"><canvas id="chart"></canvas></div>
+                </div>
+                <div class="panel" id="tunePanel">
+                    <h3>⚙️ Finomhangolás</h3>
+                    <div class="ti"><label>Opt. eltérés %</label><input type="number" id="optP" value="15"></div>
+                    <div class="ti"><label>Pes. eltérés %</label><input type="number" id="pesP" value="15"></div>
+                    <div class="ti"><label>Előrejelzés napok</label><input type="number" id="fDays" value="21" min="7"
+                            max="60"></div>
+                    <div class="ti"><label>Visszatekintés (nap)</label><input type="number" id="histDays" value="7"
+                            min="3" max="14"></div>
+                    <div id="lagViz"></div>
+                    <div class="tip">💡 A modell 1 év adatból tanulja meg a kiküldés → csatorna lag-profilt. Szerdai
+                        hosszított nap automatikusan figyelembe véve.</div>
+                </div>
+            </div>
+        </div>
+        <div class="gc">
+            <div style="overflow-x:auto;border-radius:14px">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Dátum</th>
+                            <th>Nap</th>
+                            <th>Státusz</th>
+                            <th>Kiküldött ✏️</th>
+                            <th>Beérkező</th>
+                            <th>CC</th>
+                            <th>ÜSZI</th>
+                            <th>Video</th>
+                            <th>Kapacitás ✏️</th>
+                            <th>BACKLOG</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tb"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CH = ['beerkezett', 'cc', 'uszi', 'video'];
+        const CH_NAME = { beerkezett: 'Beérkező', cc: 'CC', uszi: 'ÜSZI', video: 'Video' };
+        const DOW = ['V', 'H', 'K', 'Sze', 'Cs', 'P', 'Szo'];
+        const MAX_LAG = 14;
+
+        let raw = [], dateMap = {}, model = {}, lastReal = null, lastBL = 0, myChart = null;
+
+        document.getElementById('fi').addEventListener('change', e => {
+            const f = e.target.files[0]; if (!f) return;
+            const r = new FileReader();
+            r.onload = ev => {
+                const wb = XLSX.read(new Uint8Array(ev.target.result), { type: 'array', cellDates: true });
+                const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                parseData(json);
+                learnModel();
+                renderTable();
+                calculate();
+            };
+            r.readAsArrayBuffer(f);
+        });
+
+        function parseData(json) {
+            raw = json.map(r => {
+                let d = r['Dátum'];
+                if (!(d instanceof Date)) {
+                    if (typeof d === 'string') d = new Date(d.replace(/\./g, '-').replace(/-$/, ''));
+                    else if (typeof d === 'number') d = new Date((d - 25569) * 86400000);
+                }
+                return {
+                    date: d,
+                    kikuldott: Math.round(Number(r['Kiküldött levélszám']) || 0),
+                    beerkezett: Math.round(Number(r['Outlook beérkező']) || 0),
+                    cc: Math.round(Number(r['CC hívások száma']) || 0),
+                    uszi: Math.round(Number(r['ÜSZI rögzített hangfájlok száma']) || 0),
+                    video: Math.round(Number(r['Video hívások száma']) || 0),
+                    kapacitas: Math.round(Number(r['Levelezés megválaszolt']) || 0),
+                    backlog: r['Levelezés feldolgozandó'] != null ? Math.round(Number(r['Levelezés feldolgozandó'])) : null
+                };
+            }).filter(x => x.date && !isNaN(x.date.getTime())).sort((a, b) => a.date - b.date);
+
+            dateMap = {};
+            raw.forEach(x => dateMap[ds(x.date)] = x);
+
+            for (let i = raw.length - 1; i >= 0; i--) {
+                if (raw[i].backlog !== null) { lastReal = new Date(raw[i].date); lastBL = raw[i].backlog; break; }
+            }
+        }
+
+        function ds(d) { return d.toISOString().split('T')[0] }
+        function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r }
+
+        function learnModel() {
+            if (!lastReal || raw.length < 30) return;
+            const wd = raw.filter(x => { const dw = x.date.getDay(); return dw >= 1 && dw <= 5; });
+            model = {};
+
+            CH.forEach(ch => {
+                // 1) DOW baselines
+                const sums = {}, cnts = {};
+                for (let d = 1; d <= 5; d++) { sums[d] = 0; cnts[d] = 0; }
+                wd.forEach(x => { const dw = x.date.getDay(); if (x[ch] >= 0) { sums[dw] += x[ch]; cnts[dw]++; } });
+                const base = {};
+                for (let d = 1; d <= 5; d++) base[d] = cnts[d] > 0 ? sums[d] / cnts[d] : 0;
+
+                // 2) Weekend baseline (beérkező only)
+                let wkndBase = 0;
+                if (ch === 'beerkezett') {
+                    const we = raw.filter(x => (x.date.getDay() === 0 || x.date.getDay() === 6) && x[ch] > 0);
+                    if (we.length > 0) wkndBase = we.reduce((s, x) => s + x[ch], 0) / we.length;
+                }
+
+                // 3) Lag profile via regression on residuals
+                const lp = new Array(MAX_LAG + 1).fill(0);
+                for (let k = 1; k <= MAX_LAG; k++) {
+                    let sXY = 0, sXX = 0, n = 0;
+                    wd.forEach(x => {
+                        const past = dateMap[ds(addDays(x.date, -k))];
+                        if (past && past.kikuldott > 50) {
+                            const residual = x[ch] - (base[x.date.getDay()] || 0);
+                            sXY += past.kikuldott * residual;
+                            sXX += past.kikuldott * past.kikuldott;
+                            n++;
+                        }
+                    });
+                    if (n > 5) lp[k] = Math.max(0, sXY / sXX);
+                }
+
+                // 4) Smooth lag profile (3-point moving average)
+                const smooth = [...lp];
+                for (let k = 2; k < MAX_LAG; k++) smooth[k] = (lp[k - 1] + lp[k] + lp[k + 1]) / 3;
+                for (let k = 1; k <= MAX_LAG; k++) smooth[k] = Math.max(0, smooth[k]);
+
+                model[ch] = { base, wkndBase, lag: smooth };
+            });
+
+            // Stats display
+            const gAvg = k => Math.round(Object.values(model[k].base).reduce((a, b) => a + b, 0) / 5);
+            document.getElementById('sInc').textContent = gAvg('beerkezett');
+            document.getElementById('sCC').textContent = gAvg('cc');
+            document.getElementById('sUszi').textContent = gAvg('uszi');
+            document.getElementById('sVid').textContent = gAvg('video');
+            const kapAvg = raw.filter(x => x.date.getDay() >= 1 && x.date.getDay() <= 5 && x.kapacitas > 0);
+            document.getElementById('sKap').textContent = kapAvg.length ? Math.round(kapAvg.reduce((s, x) => s + x.kapacitas, 0) / kapAvg.length) : '-';
+
+            // Wednesday boost for ÜSZI/CC/Video
+            const wedBoosts = [];
+            ['cc', 'uszi', 'video'].forEach(ch => {
+                const avg5 = Object.values(model[ch].base).reduce((a, b) => a + b, 0) / 5;
+                if (avg5 > 0) wedBoosts.push(Math.round((model[ch].base[3] / avg5 - 1) * 100));
+            });
+            document.getElementById('sWed').textContent = wedBoosts.length ? '+' + Math.round(wedBoosts.reduce((a, b) => a + b, 0) / wedBoosts.length) + '%' : '—';
+
+            // Lag visualization
+            let viz = '';
+            CH.forEach(ch => {
+                const mx = Math.max(...model[ch].lag.slice(1));
+                viz += `<div class="ch-label">${CH_NAME[ch]} lag-profil:</div><div class="lag-bars">`;
+                for (let k = 1; k <= MAX_LAG; k++) {
+                    const h = mx > 0 ? Math.round(model[ch].lag[k] / mx * 36) : 0;
+                    viz += `<div class="lag-bar" style="height:${Math.max(1, h)}px" title="Lag ${k}: ${(model[ch].lag[k] * 100).toFixed(2)}%"></div>`;
+                }
+                viz += '</div>';
+            });
+            document.getElementById('lagViz').innerHTML = viz;
+        }
+
+        function renderTable() {
+            const tb = document.getElementById('tb'); tb.innerHTML = '';
+            if (!lastReal) return;
+            const histDays = parseInt(document.getElementById('histDays').value) || 7;
+            const fDays = parseInt(document.getElementById('fDays').value) || 21;
+            const start = addDays(lastReal, -histDays);
+            const end = addDays(lastReal, fDays);
+            const kapAvg = raw.filter(x => x.date.getDay() >= 1 && x.date.getDay() <= 5 && x.kapacitas > 0);
+            const defKap = kapAvg.length ? Math.round(kapAvg.reduce((s, x) => s + x.kapacitas, 0) / kapAvg.length) : 500;
+
+            for (let d = new Date(start); d <= end; d = addDays(d, 1)) {
+                const dStr = ds(d), dw = d.getDay(), isWe = dw === 0 || dw === 6;
+                const isPast = d <= lastReal;
+                const rd = dateMap[dStr];
+                const tr = document.createElement('tr');
+                if (isWe) tr.className = 'wknd'; else if (isPast) tr.className = 'real'; else tr.className = 'pred';
+                if (dw === 3 && !isWe) tr.classList.add('wed-row');
+
+                const badge = isPast ? '<span class="badge b-r">TÉNY</span>' : '<span class="badge b-p">JÓSLAT</span>';
+                const kik = rd ? rd.kikuldott : 0;
+                const kap = rd && isPast ? rd.kapacitas : (isWe ? 0 : defKap);
+
+                tr.innerHTML = `
+   <td style="text-align:left;font-weight:600">${d.toLocaleDateString('hu-HU', { month: 'short', day: '2-digit' })}</td>
+   <td style="font-weight:600;color:${dw === 3 ? 'var(--w)' : 'inherit'}">${DOW[dw]}${dw === 3 ? ' 📌' : ''}</td>
+   <td>${badge}</td>
+   <td><input class="tinp" type="number" id="k-${dStr}" value="${kik}"></td>
+   <td id="be-${dStr}">${rd && isPast ? rd.beerkezett : '—'}</td>
+   <td id="cc-${dStr}">${rd && isPast ? rd.cc : '—'}</td>
+   <td id="uz-${dStr}">${rd && isPast ? rd.uszi : '—'}</td>
+   <td id="vi-${dStr}">${rd && isPast ? rd.video : '—'}</td>
+   <td><input class="tinp" type="number" id="c-${dStr}" value="${kap}"></td>
+   <td id="bl-${dStr}" class="bl-main">${rd && isPast && rd.backlog !== null ? rd.backlog : '—'}</td>`;
+                tb.appendChild(tr);
+            }
+        }
+
+        function getSentMap() {
+            const m = {};
+            // Historical data
+            raw.forEach(x => m[ds(x.date)] = x.kikuldott);
+            // Override with table inputs (user may have edited)
+            document.querySelectorAll('[id^="k-"]').forEach(inp => {
+                const dStr = inp.id.substring(2);
+                m[dStr] = parseInt(inp.value) || 0;
+            });
+            return m;
+        }
+
+        function predictCh(ch, date, sentMap) {
+            const dw = date.getDay(), isWe = dw === 0 || dw === 6;
+            if (!model[ch]) return 0;
+            if (isWe && ch !== 'beerkezett') return 0;
+
+            let val = isWe ? model[ch].wkndBase : (model[ch].base[dw] || 0);
+
+            for (let k = 1; k <= MAX_LAG; k++) {
+                const past = ds(addDays(date, -k));
+                const sent = sentMap[past] || 0;
+                val += model[ch].lag[k] * sent;
+            }
+            return Math.max(0, Math.round(val));
+        }
+
+        function calculate() {
+            if (!lastReal || !model.beerkezett) { alert('Először tölts be Excel fájlt!'); return; }
+            const optF = 1 - (parseFloat(document.getElementById('optP').value) || 15) / 100;
+            const pesF = 1 + (parseFloat(document.getElementById('pesP').value) || 15) / 100;
+            const fDays = parseInt(document.getElementById('fDays').value) || 21;
+            const sentMap = getSentMap();
+
+            let bl = lastBL, blO = lastBL, blP = lastBL;
+            const labels = [], blData = [], blOData = [], blPData = [];
+            const start = addDays(lastReal, 1), end = addDays(lastReal, fDays);
+
+            for (let d = new Date(start); d <= end; d = addDays(d, 1)) {
+                const dStr = ds(d);
+                // Also capture any manually added future sends
+                const kikInp = document.getElementById('k-' + dStr);
+                if (kikInp) sentMap[dStr] = parseInt(kikInp.value) || 0;
+
+                const inc = predictCh('beerkezett', d, sentMap);
+                const cc = predictCh('cc', d, sentMap);
+                const uszi = predictCh('uszi', d, sentMap);
+                const video = predictCh('video', d, sentMap);
+                const kap = parseInt((document.getElementById('c-' + dStr) || {}).value) || 0;
+
+                bl = Math.max(0, bl + inc - kap);
+                blO = Math.max(0, blO + Math.round(inc * optF) - kap);
+                blP = Math.max(0, blP + Math.round(inc * pesF) - kap);
+
+                const beEl = document.getElementById('be-' + dStr);
+                const ccEl = document.getElementById('cc-' + dStr);
+                const uzEl = document.getElementById('uz-' + dStr);
+                const viEl = document.getElementById('vi-' + dStr);
+                const blEl = document.getElementById('bl-' + dStr);
+
+                if (beEl) beEl.textContent = inc;
+                if (ccEl) ccEl.textContent = cc;
+                if (uzEl) uzEl.textContent = uszi;
+                if (viEl) viEl.textContent = video;
+                if (blEl) blEl.innerHTML = `<div class="bl-main">${bl}</div><div class="bl-range"><span class="opt">↓${blO}</span><span class="pes">↑${blP}</span></div>`;
+
+                labels.push(d.toLocaleDateString('hu-HU', { month: 'short', day: '2-digit' }));
+                blData.push(bl); blOData.push(blO); blPData.push(blP);
+            }
+            drawChart(labels, blData, blOData, blPData);
+        }
+
+        function drawChart(labels, main, opt, pes) {
+            const ctx = document.getElementById('chart').getContext('2d');
+            if (myChart) myChart.destroy();
+            myChart = new Chart(ctx, {
+                type: 'line', data: {
+                    labels, datasets: [
+                        { label: 'Pesszimista', data: pes, borderColor: 'rgba(239,68,68,.4)', backgroundColor: 'rgba(239,68,68,.06)', fill: '+1', borderDash: [4, 4], borderWidth: 1.5, pointRadius: 0, tension: .4 },
+                        { label: 'Backlog', data: main, borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,.1)', fill: false, borderWidth: 3, pointRadius: 3, pointBackgroundColor: '#6366f1', tension: .4 },
+                        { label: 'Optimista', data: opt, borderColor: 'rgba(16,185,129,.4)', backgroundColor: 'rgba(16,185,129,.06)', fill: '-1', borderDash: [4, 4], borderWidth: 1.5, pointRadius: 0, tension: .4 }
+                    ]
+                }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }, scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false }, ticks: { font: { size: 10 } } } } }
+            });
+        }
+    </script>
+</body>
+
+</html>
