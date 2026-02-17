@@ -297,19 +297,20 @@
         }
 
         th {
-            background: #f8fafc;
+            background: #475569;
             padding: 12px 8px;
             text-align: center;
-            font-weight: 600;
-            color: #64748b;
+            font-weight: 700;
+            color: #fff;
             position: sticky;
             top: 0;
             z-index: 5;
-            font-size: 11px
+            font-size: 11px;
+            letter-spacing: 0.3px
         }
 
         td {
-            padding: 10px 6px;
+            padding: 8px 4px;
             border-bottom: 1px solid #f1f5f9;
             text-align: center
         }
@@ -360,11 +361,12 @@
         }
 
         .bl-range {
-            font-size: 9px;
-            margin-top: 3px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-top: 4px;
             display: flex;
             justify-content: center;
-            gap: 6px
+            gap: 10px
         }
 
         .opt {
@@ -373,6 +375,16 @@
 
         .pes {
             color: var(--err)
+        }
+
+        .today-row {
+            background: #fef3c7 !important;
+            border-left: 4px solid var(--w);
+        }
+
+        .today-row td:first-child {
+            font-weight: 800;
+            color: var(--w);
         }
 
         .tinp {
@@ -413,6 +425,7 @@
                 <div class="ctrls">
                     <input type="file" id="fi" style="display:none" accept=".xlsx,.xls">
                     <button class="btn" onclick="document.getElementById('fi').click()">📁 Excel betöltés</button>
+                    <button class="btn" onclick="exportExcel()" style="background:#10b981">📥 Export Excel</button>
                 </div>
             </div>
             <div class="row2">
@@ -439,8 +452,12 @@
                             <div class="sv" id="sKap">—</div>
                         </div>
                         <div class="sc">
-                            <div class="sl">Sze boost (CC/Ü/V)</div>
-                            <div class="sv" id="sWed">—</div>
+                            <div class="sl">Sze. hosszított (%)</div>
+                            <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+                                <input type="number" id="wedBoost" value="25" step="5" min="0" max="100"
+                                    style="width:70px;padding:6px;border-radius:8px;border:1px solid #e2e8f0;font-size:15px;font-weight:800;color:var(--w);font-family:inherit;text-align:center">
+                                <span style="font-size:12px;color:#64748b;font-weight:700">%</span>
+                            </div>
                         </div>
                     </div>
                     <div id="chartBox"><canvas id="chart"></canvas></div>
@@ -474,13 +491,13 @@
                             <th>Dátum</th>
                             <th>Nap</th>
                             <th>Státusz</th>
-                            <th>Kiküldött ✏️</th>
+                            <th>Kiküldött levél (db) ✏️</th>
                             <th>Beérkező</th>
                             <th>CC</th>
                             <th>ÜSZI</th>
                             <th>Video</th>
-                            <th>Kapacitás ✏️</th>
-                            <th>BACKLOG</th>
+                            <th>Megválaszolt levél (db) ✏️</th>
+                            <th>Backlog - Feldolgozandó (db)</th>
                         </tr>
                     </thead>
                     <tbody id="tb"></tbody>
@@ -539,7 +556,12 @@
             }
         }
 
-        function ds(d) { return d.toISOString().split('T')[0] }
+        function ds(d) {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
         function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r }
 
         function learnModel() {
@@ -617,13 +639,14 @@
             const kapAvg = raw.filter(x => x.date.getDay() >= 1 && x.date.getDay() <= 5 && x.kapacitas > 0);
             document.getElementById('sKap').textContent = kapAvg.length ? Math.round(kapAvg.reduce((s, x) => s + x.kapacitas, 0) / kapAvg.length) : '-';
 
-            // Wednesday boost
+            // Wednesday boost - set initial value from learned data
             const wedBoosts = [];
             ['cc', 'uszi', 'video'].forEach(ch => {
                 const avg5 = Object.values(model[ch].base).reduce((a, b) => a + b, 0) / 5;
                 if (avg5 > 0) wedBoosts.push(Math.round((model[ch].base[3] / avg5 - 1) * 100));
             });
-            document.getElementById('sWed').textContent = wedBoosts.length ? '+' + Math.round(wedBoosts.reduce((a, b) => a + b, 0) / wedBoosts.length) + '%' : '—';
+            const learnedBoost = wedBoosts.length ? Math.round(wedBoosts.reduce((a, b) => a + b, 0) / wedBoosts.length) : 25;
+            document.getElementById('wedBoost').value = learnedBoost;
 
             // Lag profile cards
             renderLagCards();
@@ -671,12 +694,16 @@
             const kapAvg = raw.filter(x => x.date.getDay() >= 1 && x.date.getDay() <= 5 && x.kapacitas > 0);
             const defKap = kapAvg.length ? Math.round(kapAvg.reduce((s, x) => s + x.kapacitas, 0) / kapAvg.length) : 500;
 
+            const todayStr = ds(new Date());
+
             for (let d = new Date(start); d <= end; d = addDays(d, 1)) {
                 const dStr = ds(d), dw = d.getDay(), isWe = dw === 0 || dw === 6;
                 const isPast = d <= lastReal;
+                const isToday = dStr === todayStr;
                 const rd = dateMap[dStr];
                 const tr = document.createElement('tr');
-                if (isWe) tr.className = 'wknd';
+                if (isToday) tr.className = 'today-row';
+                else if (isWe) tr.className = 'wknd';
                 else if (isPast) tr.className = 'real';
                 else tr.className = 'pred';
                 if (dw === 3 && !isWe) tr.classList.add('wed-row');
@@ -688,7 +715,7 @@
 
                 const fmtDate = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
                 tr.innerHTML = `
-   <td style="text-align:left;font-weight:600">${fmtDate}</td>
+   <td style="text-align:center;font-weight:600">${fmtDate}</td>
    <td style="font-weight:600;color:${dw === 3 ? 'var(--w)' : dw === 5 ? '#8b5cf6' : 'inherit'}">${DOW[dw]}</td>
    <td>${badge}</td>
    <td><input class="tinp" type="number" id="k-${dStr}" value="${kik}"></td>
@@ -717,6 +744,12 @@
             if (isWe && ch !== 'beerkezett') return 0;
 
             let val = isWe ? model[ch].wkndBase : (model[ch].base[dw] || 0);
+
+            // Szerdai hosszított nyitvatartás boost (CC, ÜSZI, Video)
+            if (dw === 3 && (ch === 'cc' || ch === 'uszi' || ch === 'video')) {
+                const boost = (parseFloat(document.getElementById('wedBoost').value) || 0) / 100;
+                val *= (1 + boost);
+            }
 
             // Péntek rövidebb nap ÜSZI és Video esetén (-20%)
             if (dw === 5 && (ch === 'uszi' || ch === 'video')) {
@@ -762,11 +795,29 @@
             // --- Historikus backlog adatok összegyűjtése a diagramhoz ---
             const histLabels = [], histBL = [];
             const histStart = addDays(lastReal, -histDays);
+            let lastKnownBL = null;
+
             for (let d = new Date(histStart); d <= lastReal; d = addDays(d, 1)) {
-                const rd = dateMap[ds(d)];
+                const dStr = ds(d);
+                const rd = dateMap[dStr];
+                const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+
                 if (rd && rd.backlog !== null) {
+                    // Tény adat van
                     histLabels.push(fmtD(d));
                     histBL.push(rd.backlog);
+                    lastKnownBL = rd.backlog;
+                } else if (lastKnownBL !== null && isWeekend) {
+                    // Hétvégi becslés: előző nap backlog + beérkező
+                    const inc = rd && rd.beerkezett ? rd.beerkezett : (model.beerkezett && model.beerkezett.wkndBase ? model.beerkezett.wkndBase : 0);
+                    const estimatedBL = Math.max(0, lastKnownBL + inc);
+                    histLabels.push(fmtD(d));
+                    histBL.push(estimatedBL);
+                    lastKnownBL = estimatedBL;
+                } else {
+                    // Nincs adat és nem tudjuk becsülni
+                    histLabels.push(fmtD(d));
+                    histBL.push(null);
                 }
             }
 
@@ -800,7 +851,16 @@
                 if (ccEl) ccEl.textContent = cc;
                 if (uzEl) uzEl.textContent = uszi;
                 if (viEl) viEl.textContent = video;
-                if (blEl) blEl.innerHTML = `<div class="bl-main">${bl}</div><div class="bl-range"><span class="opt">↓${blO}</span><span class="pes">↑${blP}</span></div>`;
+
+                // Hétvégi backlog becslés jelzése
+                const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                if (blEl) {
+                    if (isWeekend) {
+                        blEl.innerHTML = `<div class="bl-main" style="opacity:0.6;font-style:italic">${bl}</div><div class="bl-range"><span class="opt">↓${blO}</span><span class="pes">↑${blP}</span></div>`;
+                    } else {
+                        blEl.innerHTML = `<div class="bl-main">${bl}</div><div class="bl-range"><span class="opt">↓${blO}</span><span class="pes">↑${blP}</span></div>`;
+                    }
+                }
 
                 predLabels.push(fmtD(d));
                 predBL.push(bl); predBLO.push(blO); predBLP.push(blP);
@@ -839,7 +899,7 @@
                             pointRadius: 3,
                             pointBackgroundColor: '#10b981',
                             tension: .3,
-                            spanGaps: false
+                            spanGaps: true
                         },
                         {
                             label: 'Pesszimista',
@@ -901,8 +961,8 @@
                 if (lastReal && model.beerkezett) calculate();
             }, 600);
         }
-        // Tuning panel inputok
-        ['lagDamp', 'optP', 'pesP', 'fDays', 'histDays'].forEach(id => {
+        // Tuning panel inputok + Wednesday boost
+        ['lagDamp', 'optP', 'pesP', 'fDays', 'histDays', 'wedBoost'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.addEventListener('input', () => {
                 if (id === 'fDays' || id === 'histDays') {
@@ -918,6 +978,46 @@
         });
         // Táblázat inputok (kiküldött, kapacitás) - delegált eseménykezelő
         document.getElementById('tb').addEventListener('input', scheduleRecalc);
+
+        function exportExcel() {
+            if (!lastReal) return alert('Nincs exportálható adat!');
+            const table = document.querySelector('table');
+            const data = [];
+
+            // Fejlécek
+            const headers = [];
+            table.querySelectorAll('thead th').forEach(th => headers.push(th.innerText.replace(' ✏️', '')));
+            data.push(headers);
+
+            // Sorok
+            table.querySelectorAll('tbody tr').forEach(tr => {
+                const row = [];
+                tr.querySelectorAll('td').forEach((td, idx) => {
+                    const input = td.querySelector('input');
+                    if (input) {
+                        row.push(Number(input.value) || 0);
+                    } else {
+                        // Backlog oszlop (tartalmazhat opt/pes tartományt)
+                        if (idx === headers.length - 1) {
+                            const mainVal = td.querySelector('.bl-main');
+                            if (mainVal) {
+                                row.push(Number(mainVal.innerText) || 0);
+                            } else {
+                                row.push(td.innerText);
+                            }
+                        } else {
+                            row.push(td.innerText);
+                        }
+                    }
+                });
+                data.push(row);
+            });
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            XLSX.utils.book_append_sheet(wb, ws, "Tervezett Adatok");
+            XLSX.writeFile(wb, `uko_tervezes_${ds(new Date())}.xlsx`);
+        }
     </script>
 </body>
 
