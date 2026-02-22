@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="hu">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ÜKO - Terheléstervező</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --p: #6366f1;
+            --pd: #4f46e5;
+            --s: #ec4899;
+            --ok: #10b981;
+            --w: #f59e0b;
+            --err: #ef4444;
+            --card: rgba(255, 255, 255, .92);
+            --t: #1e293b
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #eff1fb;
+            padding: 24px 24px 80px;
+            min-height: 100vh;
+            color: var(--t)
+        }
+
+        .container {
+            max-width: 1700px;
+            margin: auto
+        }
+
+        .gc {
+            background: var(--card);
+            backdrop-filter: blur(12px);
+            border-radius: 18px;
+            padding: 22px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, .06);
+            border: 1px solid rgba(255, 255, 255, .7);
+            margin-bottom: 22px
+        }
+
+        .hdr {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 16px;
+            margin-bottom: 16px
+        }
+
+        @media(max-width:600px) {
+            .hdr {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+
+        h1 {
+            font-size: 22px;
+            background: linear-gradient(to right, var(--p), var(--s));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+            letter-spacing: -0.4px
+        }
+
+        .ctrls {
+            display: flex;
+            gap: 10px;
+            align-items: center
+        }
+
+        .btn {
+            background: var(--p);
+            color: #fff;
+            border: none;
+            padding: 7px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+            transition: .2s;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px
+        }
+
+        .btn svg {
+            width: 14px;
+            height: 14px;
+            stroke: #fff;
+            flex-shrink: 0
+        }
+
+        .btn:hover {
+            background: var(--pd);
+            transform: translateY(-1px)
+        }
+
+        .btn-go {
+            background: linear-gradient(135deg, var(--p), var(--s))
+        }
+
+        .row2 {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px
+        }
+
+        @media(max-width:1100px) {
+            .row2 {
+                grid-template-columns: 1fr
+            }
+        }
+
+        @media(max-width:600px) {
+            body {
+                padding: 12px;
+            }
+
+            .gc {
+                padding: 14px;
+                border-radius: 12px;
+            }
+        }
+
+        .sg {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px
+        }
+
+        .sc {
+            background: #fff;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid #f1f5f9
+        }
+
+        .sl {
+            font-size: 10px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: .4px
+        }
+
+        .sv {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--p);
+            margin-top: 4px
+        }
+
+        .panel {
+            background: rgba(248, 250, 252, .6);
+            border-radius: 14px;
+            padding: 18px
+        }
+
+        .panel h3 {
+            font-size: 15px;
+            margin-bottom: 12px
+        }
+
+        .ti {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 10px
+        }
+
+        .ti label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #475569
+        }
+
+        .ti input {
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            outline: none;
+            font-size: 13px;
+            font-family: inherit;
+            width: 100%;
+            min-width: 0
+        }
+
+        .ti input:focus {
+            border-color: var(--p)
+        }
+
+        .tip {
+            background: #f0f4ff;
+            border: 1px solid #c7d2fe;
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-top: 14px
+        }
+
+        .tip-title {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--p);
+            margin-bottom: 8px
+        }
+
+        .tip-title svg {
+            width: 13px;
+            height: 13px;
+            stroke: var(--p)
+        }
+
+        .tip-body {
+            font-size: 11px;
+            color: #475569;
+            line-height: 1.6
+        }
+
+        #chartBox {
+            height: 260px;
+            margin-bottom: 8px
+        }
+
+        /* Lag profiles section */
+        .lag-section {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-top: 8px
+        }
+
+        @media(max-width:900px) {
+            .lag-section {
+                grid-template-columns: repeat(2, 1fr)
+            }
+        }
+
+        @media(max-width:500px) {
+            .lag-section {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .lag-desc {
+            font-size: 10px;
+            color: #94a3b8;
+            margin-top: 3px;
+        }
+
+        .lag-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 14px;
+            border: 1px solid #f1f5f9
+        }
+
+        .lag-card h4 {
+            font-size: 12px;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 8px
+        }
+
+        .lag-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            height: 50px
+        }
+
+        .lag-bar {
+            flex: 1;
+            background: var(--p);
+            border-radius: 2px 2px 0 0;
+            min-height: 1px;
+            opacity: .7;
+            position: relative;
+            cursor: default
+        }
+
+        .lag-bar:hover {
+            opacity: 1
+        }
+
+        .lag-bar:hover::after {
+            content: attr(data-tip);
+            position: absolute;
+            bottom: calc(100% + 4px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: #fff;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-size: 9px;
+            white-space: nowrap;
+            z-index: 10
+        }
+
+        .lag-peak {
+            font-size: 10px;
+            color: #64748b;
+            margin-top: 6px
+        }
+
+        .lag-peak b {
+            color: var(--p)
+        }
+
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px
+        }
+
+        th {
+            background: #64748b;
+            padding: 11px 8px;
+            text-align: center;
+            font-weight: 600;
+            color: rgba(255, 255, 255, .9);
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            font-size: 11px;
+            letter-spacing: 0.2px
+        }
+
+        th.th-edit {
+            background: #64748b;
+            color: #fff;
+            font-weight: 700
+        }
+
+        td {
+            padding: 8px 4px;
+            border-bottom: 1px solid #f1f5f9;
+            text-align: center
+        }
+
+        .wknd {
+            background: #f8fafc !important;
+            color: #94a3b8
+        }
+
+        .real {
+            background: #ecfdf5
+        }
+
+        .pred {
+            background: #fffbeb
+        }
+
+        .wed-row {
+            border-left: 3px solid var(--w)
+        }
+
+        .fri-row {
+            border-left: 3px solid #a78bfa
+        }
+
+        .badge {
+            padding: 3px 7px;
+            border-radius: 5px;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase
+        }
+
+        .b-r {
+            background: #d1fae5;
+            color: #065f46
+        }
+
+        .b-p {
+            background: #fef3c7;
+            color: #92400e
+        }
+
+        .bl-main {
+            font-weight: 800;
+            color: var(--p);
+            font-size: 14px
+        }
+
+        .bl-range {
+            font-size: 11px;
+            font-weight: 700;
+            margin-top: 4px;
+            display: flex;
+            justify-content: center;
+            gap: 10px
+        }
+
+        .opt {
+            color: var(--ok)
+        }
+
+        .pes {
+            color: var(--err)
+        }
+
+        .today-row {
+            background: #fef3c7 !important;
+            border-left: 4px solid var(--w);
+        }
+
+        .today-row td:first-child {
+            font-weight: 800;
+            color: var(--w);
+        }
+
+        .tinp {
+            width: 68px;
+            border: none;
+            background: rgba(0, 0, 0, .04);
+            padding: 4px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 12px;
+            font-family: inherit
+        }
+
+        .tinp:focus {
+            outline: 2px solid var(--p);
+            background: #fff
+        }
+
+        .action-bar {
+            display: flex;
+            justify-content: center;
+            padding: 18px 0;
+        }
+
+        .action-bar .btn {
+            padding: 14px 40px;
+            font-size: 15px;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, .3);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="gc">
+            <div class="hdr">
+                <h1>ÜKO &mdash; Terheléstervező</h1>
+                <div class="ctrls">
+                    <input type="file" id="fi" style="display:none" accept=".xlsx,.xls">
+                    <button class="btn" onclick="document.getElementById('fi').click()">
+                        <i data-lucide="upload"></i> Excel betöltés
+                    </button>
+                    <button class="btn" onclick="calculate()" style="background:#0071e3">
+                        <i data-lucide="refresh-cw"></i> Frissítés
+                    </button>
+                    <button class="btn" onclick="exportExcel()" style="background:#10b981">
+                        <i data-lucide="file-spreadsheet"></i> Export Excel
+                    </button>
+                </div>
+            </div>
+            <div class="row2">
+                <div>
+                    <div class="sg" id="statsP">
+                        <div class="sc">
+                            <div class="sl">Átl. Beérkező</div>
+                            <div class="sv" id="sInc">—</div>
+                        </div>
+                        <div class="sc">
+                            <div class="sl">Átl. CC</div>
+                            <div class="sv" id="sCC">—</div>
+                        </div>
+                        <div class="sc">
+                            <div class="sl">Átl. ÜSZI</div>
+                            <div class="sv" id="sUszi">—</div>
+                        </div>
+                        <div class="sc">
+                            <div class="sl">Átl. Video</div>
+                            <div class="sv" id="sVid">—</div>
+                        </div>
+                        <div class="sc">
+                            <div class="sl">Átl. megválaszolt</div>
+                            <div class="sv" id="sKap">—</div>
+                        </div>
+                        <div class="sc">
+                            <div class="sl">Sze. hosszított (%)</div>
+                            <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+                                <input type="number" id="wedBoost" value="25" step="5" min="0" max="100"
+                                    style="width:70px;padding:6px;border-radius:8px;border:1px solid #e2e8f0;font-size:15px;font-weight:800;color:var(--w);font-family:inherit;text-align:center">
+                                <span style="font-size:12px;color:#64748b;font-weight:700">%</span>
+                            </div>
+                        </div>
+                        <div class="sc">
+                            <div class="sl">P. rövidített (%) ↓</div>
+                            <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+                                <input type="number" id="friReduce" value="15" step="5" min="0" max="50"
+                                    style="width:70px;padding:6px;border-radius:8px;border:1px solid #e2e8f0;font-size:15px;font-weight:800;color:#8b5cf6;font-family:inherit;text-align:center">
+                                <span style="font-size:12px;color:#64748b;font-weight:700">%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chartBox"><canvas id="chart"></canvas></div>
+                    <div class="lag-section" id="lagSection"></div>
+                </div>
+                <div class="panel" id="tunePanel">
+                    <h3 style="display:flex;align-items:center;gap:7px;font-size:13px;margin-bottom:14px">
+                        <i data-lucide="sliders-horizontal" style="width:15px;height:15px;stroke:var(--p)"></i>
+                        Finomhangolás
+                    </h3>
+                    <div class="ti"><label>Lag csillapítás (0.2–1.5)</label><input type="number" id="lagDamp"
+                            value="0.4" step="0.05" min="0.1" max="2"></div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+                        <div class="ti" style="margin-bottom:0"><label>Optimista %</label><input type="number" id="optP"
+                                value="15"></div>
+                        <div class="ti" style="margin-bottom:0"><label>Pesszimista %</label><input type="number"
+                                id="pesP" value="15"></div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+                        <div class="ti" style="margin-bottom:0"><label>Előrejelzés (nap)</label><input type="number"
+                                id="fDays" value="21" min="7" max="60"></div>
+                        <div class="ti" style="margin-bottom:0"><label>Visszatekintés (nap)</label><input type="number"
+                                id="histDays" value="7" min="3" max="365"></div>
+                    </div>
+                    <div class="tip">
+                        <div class="tip-title">
+                            <i data-lucide="info"></i>
+                            Modell info
+                        </div>
+                        <div class="tip-body">
+                            <b>Lag csillapítás:</b> Ha a backlog túl magasra jósol, csökkentsd (pl. 0.3), ha alul,
+                            növeld (pl. 0.8).<br><br>
+                            Szerdai hosszított és pénteki rövidített nap (CC/ÜSZI/Video) mindkettő állítható a
+                            statisztika sávban.<br><br>
+                            <b>Lag sorrend:</b> CC (2–3 nap) &rarr; ÜSZI/Video (2–4 nap) &rarr; Beérkező (4–7 nap)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="gc">
+            <div style="overflow-x:auto;border-radius:14px">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Dátum</th>
+                            <th>Nap</th>
+                            <th>Státusz</th>
+                            <th class="th-edit">Kiküldött levél (db) ✏️</th>
+                            <th>Beérkező</th>
+                            <th>CC</th>
+                            <th>ÜSZI</th>
+                            <th>Video</th>
+                            <th class="th-edit">Megválaszolt levél (db) ✏️</th>
+                            <th>Backlog - Feldolgozandó (db)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tb"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CH = ['beerkezett', 'cc', 'uszi', 'video'];
+        const CH_NAME = { beerkezett: 'Beérkező', cc: 'CC Hívás', uszi: 'ÜSZI', video: 'Video' };
+        const CH_COLOR = { beerkezett: '#6366f1', cc: '#ec4899', uszi: '#f59e0b', video: '#10b981' };
+        const DOW = ['V', 'H', 'K', 'Sze', 'Cs', 'P', 'Szo'];
+        const MAX_LAG = 14;
+
+        let raw = [], dateMap = {}, model = {}, lastReal = null, lastBL = 0, myChart = null;
+
+        document.getElementById('fi').addEventListener('change', e => {
+            const f = e.target.files[0]; if (!f) return;
+            const r = new FileReader();
+            r.onload = ev => {
+                const wb = XLSX.read(new Uint8Array(ev.target.result), { type: 'array', cellDates: true });
+                const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                parseData(json);
+                learnModel();
+                renderTable();
+                calculate();
+            };
+            r.readAsArrayBuffer(f);
+        });
+
+        function parseData(json) {
+            raw = json.map(r => {
+                let d = r['Dátum'];
+                if (!(d instanceof Date)) {
+                    if (typeof d === 'string') d = new Date(d.replace(/\./g, '-').replace(/-$/, ''));
+                    else if (typeof d === 'number') d = new Date((d - 25569) * 86400000);
+                }
+                return {
+                    date: d,
+                    kikuldott: Math.round(Number(r['Kiküldött levélszám']) || 0),
+                    beerkezett: Math.round(Number(r['Outlook beérkező']) || 0),
+                    cc: Math.round(Number(r['CC hívások száma']) || 0),
+                    uszi: Math.round(Number(r['ÜSZI rögzített hangfájlok száma']) || 0),
+                    video: Math.round(Number(r['Video hívások száma']) || 0),
+                    kapacitas: Math.round(Number(r['Levelezés megválaszolt']) || 0),
+                    backlog: r['Levelezés feldolgozandó'] != null ? Math.round(Number(r['Levelezés feldolgozandó'])) : null
+                };
+            }).filter(x => x.date && !isNaN(x.date.getTime())).sort((a, b) => a.date - b.date);
+
+            dateMap = {};
+            raw.forEach(x => dateMap[ds(x.date)] = x);
+
+            for (let i = raw.length - 1; i >= 0; i--) {
+                if (raw[i].backlog !== null) { lastReal = new Date(raw[i].date); lastBL = raw[i].backlog; break; }
+            }
+        }
+
+        function ds(d) {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r }
+
+        function learnModel() {
+            if (!lastReal || raw.length < 30) return;
+            const wd = raw.filter(x => { const dw = x.date.getDay(); return dw >= 1 && dw <= 5; });
+            model = {};
+
+            CH.forEach(ch => {
+                // 1) DOW baselines
+                const sums = {}, cnts = {};
+                for (let d = 1; d <= 5; d++) { sums[d] = 0; cnts[d] = 0; }
+                wd.forEach(x => { const dw = x.date.getDay(); if (x[ch] >= 0) { sums[dw] += x[ch]; cnts[dw]++; } });
+                const base = {};
+                for (let d = 1; d <= 5; d++) base[d] = cnts[d] > 0 ? sums[d] / cnts[d] : 0;
+
+                // 2) Weekend baseline (beérkező only)
+                let wkndBase = 0;
+                if (ch === 'beerkezett') {
+                    const we = raw.filter(x => (x.date.getDay() === 0 || x.date.getDay() === 6) && x[ch] > 0);
+                    if (we.length > 0) wkndBase = we.reduce((s, x) => s + x[ch], 0) / we.length;
+                }
+
+                // 3) Learn total lag magnitude from data (regression)
+                let totalMag = 0, magCount = 0;
+                wd.forEach(x => {
+                    // Average the residual / average_sent ratio across all lags
+                    const residual = x[ch] - (base[x.date.getDay()] || 0);
+                    let laggedSendSum = 0, lagCount = 0;
+                    for (let k = 1; k <= MAX_LAG; k++) {
+                        const past = dateMap[ds(addDays(x.date, -k))];
+                        if (past && past.kikuldott > 50) { laggedSendSum += past.kikuldott; lagCount++; }
+                    }
+                    if (lagCount > 3 && laggedSendSum > 0) {
+                        totalMag += residual / (laggedSendSum / lagCount);
+                        magCount++;
+                    }
+                });
+                let learnedMag = magCount > 10 ? Math.max(0, totalMag / magCount) : 0;
+                // Minimum fallback ha az adatból nem tanul eleget
+                const minMag = { cc: 0.005, uszi: 0.003, video: 0.004, beerkezett: 0.01 };
+                if (learnedMag < (minMag[ch] || 0)) learnedMag = minMag[ch] || 0.005;
+
+                // 4) Domain-constrained shape templates
+                // Javított lag profilok a valós adatok alapján:
+                // CC: lassabb lecsengés (peak ~1-2d, de hatás 5-6 napig tart)
+                // ÜSZI: közepes (peak ~2-3d)
+                // Video: közepes (peak ~2d)
+                // Beérkező: lassú (peak ~5d, hosszú farok)
+                const shapes = {
+                    // CC: az ügyfelek 2-4 nappal a levél után hívnak (elolvassák, gondolkodnak)
+                    cc: k => Math.pow(Math.max(0, k - 1), 1.2) * Math.exp(-(k - 1) / 2.5),
+                    // ÜSZI: közepes (peak ~2-3d)
+                    uszi: k => Math.pow(Math.max(0, k - 0.5), 1.0) * Math.exp(-(k - 0.5) / 3.0),
+                    // Video: közepes (peak ~2d)
+                    video: k => Math.pow(Math.max(0, k - 0.5), 0.8) * Math.exp(-(k - 0.5) / 2.5),
+                    // Beérkező: lassú (peak ~5d, hosszú farok)
+                    beerkezett: k => Math.pow(Math.max(0, k - 2), 1.5) * Math.exp(-(k - 2) / 3.0)
+                };
+
+                // Generate normalized shape, then scale by learned magnitude
+                const rawShape = new Array(MAX_LAG + 1).fill(0);
+                let shapeSum = 0;
+                for (let k = 1; k <= MAX_LAG; k++) {
+                    rawShape[k] = shapes[ch](k);
+                    shapeSum += rawShape[k];
+                }
+                const lag = new Array(MAX_LAG + 1).fill(0);
+                if (shapeSum > 0) {
+                    for (let k = 1; k <= MAX_LAG; k++) {
+                        lag[k] = (rawShape[k] / shapeSum) * learnedMag;
+                    }
+                }
+
+                // 5) Hétfői hétvégi felhalmozódás szorzó tanulása
+                // A hétvégén érkező levelek hétfőn csapódnak le → hétfő strukturálisan magasabb
+                let monBoost = 1.0;
+                if (ch !== 'beerkezett') {
+                    const monDays = wd.filter(x => x.date.getDay() === 1);
+                    const otherDays = wd.filter(x => x.date.getDay() >= 2 && x.date.getDay() <= 5);
+                    const monAvg = monDays.length > 0 ? monDays.reduce((s, x) => s + x[ch], 0) / monDays.length : 0;
+                    const otherAvg = otherDays.length > 0 ? otherDays.reduce((s, x) => s + x[ch], 0) / otherDays.length : 0;
+                    // Tanuljuk meg a hétfői többletet (de max 25% lehet - túll nagy szorzó túlbecsli a CC-t)
+                    monBoost = (monAvg > 0 && otherAvg > 0) ? Math.min(1.25, monAvg / otherAvg) : 1.0;
+                }
+
+                model[ch] = { base, wkndBase, lag, monBoost };
+            });
+
+            // Stats display
+            const gAvg = k => Math.round(Object.values(model[k].base).reduce((a, b) => a + b, 0) / 5);
+            document.getElementById('sInc').textContent = gAvg('beerkezett');
+            document.getElementById('sCC').textContent = gAvg('cc');
+            document.getElementById('sUszi').textContent = gAvg('uszi');
+            document.getElementById('sVid').textContent = gAvg('video');
+            const kapAvg = raw.filter(x => x.date.getDay() >= 1 && x.date.getDay() <= 5 && x.kapacitas > 0);
+            document.getElementById('sKap').textContent = kapAvg.length ? Math.round(kapAvg.reduce((s, x) => s + x.kapacitas, 0) / kapAvg.length) : '-';
+
+            // Wednesday boost - set initial value from learned data
+            const wedBoosts = [];
+            ['cc', 'uszi', 'video'].forEach(ch => {
+                const avg5 = Object.values(model[ch].base).reduce((a, b) => a + b, 0) / 5;
+                if (avg5 > 0) wedBoosts.push(Math.round((model[ch].base[3] / avg5 - 1) * 100));
+            });
+            const learnedBoost = wedBoosts.length ? Math.round(wedBoosts.reduce((a, b) => a + b, 0) / wedBoosts.length) : 25;
+            document.getElementById('wedBoost').value = learnedBoost;
+
+            // Lag profile cards
+            renderLagCards();
+        }
+
+        // Csatorna-specifikus lag leírások
+        const LAG_DESC = {
+            cc: 'Lecsapódás kezdete: ~2-3 nap a kiküldéstől',
+            uszi: 'Lecsapódás kezdete: ~2-3 nap a kiküldéstől',
+            video: 'Lecsapódás kezdete: ~2 nap a kiküldéstől',
+            beerkezett: 'Lecsapódás kezdete: ~3-5 nap a kiküldéstől'
+        };
+
+        function renderLagCards() {
+            const sec = document.getElementById('lagSection');
+            let html = '';
+            CH.forEach(ch => {
+                if (!model[ch]) return;
+                const lag = model[ch].lag;
+                const mx = Math.max(...lag.slice(1));
+                const peakK = lag.indexOf(mx, 1);
+
+                html += `<div class="lag-card">
+   <h4 style="color:${CH_COLOR[ch]}">${CH_NAME[ch]}</h4>
+   <div class="lag-bars">`;
+                for (let k = 1; k <= MAX_LAG; k++) {
+                    const h = mx > 0 ? Math.round(lag[k] / mx * 46) : 0;
+                    html += `<div class="lag-bar" style="height:${Math.max(1, h)}px;background:${CH_COLOR[ch]}" data-tip="${k}. nap: ${(lag[k] * 100).toFixed(2)}%"></div>`;
+                }
+                html += `</div>
+   <div class="lag-peak">Csúcs hatás: <b>${peakK}. nap</b> a kiküldéstől</div>
+   <div class="lag-desc">${LAG_DESC[ch]}</div>
+  </div>`;
+            });
+            sec.innerHTML = html;
+        }
+
+        function renderTable() {
+            const tb = document.getElementById('tb'); tb.innerHTML = '';
+            if (!lastReal) return;
+            const histDays = parseInt(document.getElementById('histDays').value) || 7;
+            const fDays = parseInt(document.getElementById('fDays').value) || 21;
+            const start = addDays(lastReal, -histDays);
+            const end = addDays(lastReal, fDays);
+            const kapAvg = raw.filter(x => x.date.getDay() >= 1 && x.date.getDay() <= 5 && x.kapacitas > 0);
+            const defKap = kapAvg.length ? Math.round(kapAvg.reduce((s, x) => s + x.kapacitas, 0) / kapAvg.length) : 500;
+
+            const todayStr = ds(new Date());
+
+            for (let d = new Date(start); d <= end; d = addDays(d, 1)) {
+                const dStr = ds(d), dw = d.getDay(), isWe = dw === 0 || dw === 6;
+                const isPast = d <= lastReal;
+                const isToday = dStr === todayStr;
+                const rd = dateMap[dStr];
+                const tr = document.createElement('tr');
+                if (isToday) tr.className = 'today-row';
+                else if (isWe) tr.className = 'wknd';
+                else if (isPast) tr.className = 'real';
+                else tr.className = 'pred';
+                if (dw === 3 && !isWe) tr.classList.add('wed-row');
+                if (dw === 5 && !isWe) tr.classList.add('fri-row');
+
+                const badge = isPast ? '<span class="badge b-r">TÉNY</span>' : '<span class="badge b-p">FIKTÍV</span>';
+                const kik = rd ? rd.kikuldott : 0;
+                const kap = rd && isPast ? rd.kapacitas : (isWe ? 0 : defKap);
+
+                const fmtDate = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+                tr.innerHTML = `
+   <td style="text-align:center;font-weight:600">${fmtDate}</td>
+   <td style="font-weight:600;color:${dw === 3 ? 'var(--w)' : dw === 5 ? '#8b5cf6' : 'inherit'}">${DOW[dw]}</td>
+   <td>${badge}</td>
+   <td><input class="tinp" type="number" id="k-${dStr}" value="${kik}"></td>
+   <td id="be-${dStr}">${rd && isPast ? rd.beerkezett : '—'}</td>
+   <td id="cc-${dStr}">${rd && isPast ? rd.cc : '—'}</td>
+   <td id="uz-${dStr}">${rd && isPast ? rd.uszi : '—'}</td>
+   <td id="vi-${dStr}">${rd && isPast ? rd.video : '—'}</td>
+   <td><input class="tinp" type="number" id="c-${dStr}" value="${kap}"></td>
+   <td id="bl-${dStr}" class="bl-main">${rd && isPast && rd.backlog !== null ? rd.backlog : '—'}</td>`;
+                tb.appendChild(tr);
+            }
+        }
+
+        function getSentMap() {
+            const m = {};
+            raw.forEach(x => m[ds(x.date)] = x.kikuldott);
+            document.querySelectorAll('[id^="k-"]').forEach(inp => {
+                m[inp.id.substring(2)] = parseInt(inp.value) || 0;
+            });
+            return m;
+        }
+
+        function predictCh(ch, date, sentMap) {
+            const dw = date.getDay(), isWe = dw === 0 || dw === 6;
+            if (!model[ch]) return 0;
+            if (isWe && ch !== 'beerkezett') return 0;
+
+            let val = isWe ? model[ch].wkndBase : (model[ch].base[dw] || 0);
+
+            // Hétfői hétvégi felhalmozódás boost (tanult szorzó)
+            // A hétvégén érkező levelek hétfőn csapódnak le
+            if (dw === 1 && ch !== 'beerkezett') {
+                const monBoost = model[ch].monBoost || 1.0;
+                val *= monBoost;
+            }
+
+            // Szerdai hosszított nyitvatartás boost (CC, ÜSZI, Video)
+            if (dw === 3 && (ch === 'cc' || ch === 'uszi' || ch === 'video')) {
+                const boost = (parseFloat(document.getElementById('wedBoost').value) || 0) / 100;
+                val *= (1 + boost);
+            }
+
+            // Péntek rövidített nap (CC, ÜSZI, Video) - állítható %
+            if (dw === 5 && (ch === 'cc' || ch === 'uszi' || ch === 'video')) {
+                const reduce = (parseFloat(document.getElementById('friReduce').value) || 15) / 100;
+                val *= (1 - reduce);
+            }
+
+            const damp = parseFloat(document.getElementById('lagDamp').value) || 0.5;
+
+            if (ch === 'beerkezett') {
+                // Beérkező: exponenciális lecsengés a kiküldött levelek alapján
+                const lagCoeff = 0.03 * damp;
+                let lagImpact = 0;
+                for (let k = 1; k <= MAX_LAG; k++) {
+                    const past = ds(addDays(date, -k));
+                    const sent = sentMap[past] || 0;
+                    lagImpact += sent * Math.exp(-k / 5) * lagCoeff;
+                }
+                val += lagImpact;
+            } else {
+                // CC, ÜSZI, Video: domain-constrained lag profilok
+                // Hétvégi napok kiküldött levelei is beleszámítanak (hétfőn csapódnak le)
+                for (let k = 1; k <= MAX_LAG; k++) {
+                    const past = ds(addDays(date, -k));
+                    const sent = sentMap[past] || 0;
+                    val += model[ch].lag[k] * sent * damp;
+                }
+            }
+            return Math.max(0, Math.round(val));
+        }
+
+        function fmtD(d) {
+            return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        function calculate() {
+            if (!lastReal || !model.beerkezett) { alert('Először tölts be Excel fájlt!'); return; }
+            const optF = 1 - (parseFloat(document.getElementById('optP').value) || 15) / 100;
+            const pesF = 1 + (parseFloat(document.getElementById('pesP').value) || 15) / 100;
+            const fDays = parseInt(document.getElementById('fDays').value) || 21;
+            const histDays = parseInt(document.getElementById('histDays').value) || 7;
+            const sentMap = getSentMap();
+
+            // --- Historikus backlog adatok összegyűjtése a diagramhoz ---
+            const histLabels = [], histBL = [];
+            const histStart = addDays(lastReal, -histDays);
+            let lastKnownBL = null;
+
+            for (let d = new Date(histStart); d <= lastReal; d = addDays(d, 1)) {
+                const dStr = ds(d);
+                const rd = dateMap[dStr];
+                const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+
+                if (rd && rd.backlog !== null) {
+                    // Tény adat van
+                    histLabels.push(fmtD(d));
+                    histBL.push(rd.backlog);
+                    lastKnownBL = rd.backlog;
+                } else if (lastKnownBL !== null && isWeekend) {
+                    // Hétvégi becslés: előző nap backlog + beérkező
+                    const inc = rd && rd.beerkezett ? rd.beerkezett : (model.beerkezett && model.beerkezett.wkndBase ? model.beerkezett.wkndBase : 0);
+                    const estimatedBL = Math.max(0, lastKnownBL + inc);
+                    histLabels.push(fmtD(d));
+                    histBL.push(estimatedBL);
+                    lastKnownBL = estimatedBL;
+                } else {
+                    // Nincs adat és nem tudjuk becsülni
+                    histLabels.push(fmtD(d));
+                    histBL.push(null);
+                }
+            }
+
+            // --- Jóslat számítás ---
+            let bl = lastBL, blO = lastBL, blP = lastBL;
+            const predLabels = [], predBL = [], predBLO = [], predBLP = [];
+            const start = addDays(lastReal, 1), end = addDays(lastReal, fDays);
+
+            for (let d = new Date(start); d <= end; d = addDays(d, 1)) {
+                const dStr = ds(d);
+                const kikInp = document.getElementById('k-' + dStr);
+                if (kikInp) sentMap[dStr] = parseInt(kikInp.value) || 0;
+
+                const inc = predictCh('beerkezett', d, sentMap);
+                const cc = predictCh('cc', d, sentMap);
+                const uszi = predictCh('uszi', d, sentMap);
+                const video = predictCh('video', d, sentMap);
+                const kap = parseInt((document.getElementById('c-' + dStr) || {}).value) || 0;
+
+                bl = Math.max(0, bl + inc - kap);
+                blO = Math.max(0, blO + Math.round(inc * optF) - kap);
+                blP = Math.max(0, blP + Math.round(inc * pesF) - kap);
+
+                const beEl = document.getElementById('be-' + dStr);
+                const ccEl = document.getElementById('cc-' + dStr);
+                const uzEl = document.getElementById('uz-' + dStr);
+                const viEl = document.getElementById('vi-' + dStr);
+                const blEl = document.getElementById('bl-' + dStr);
+
+                if (beEl) beEl.textContent = inc;
+                if (ccEl) ccEl.textContent = cc;
+                if (uzEl) uzEl.textContent = uszi;
+                if (viEl) viEl.textContent = video;
+
+                // Hétvégi backlog becslés jelzése
+                const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                if (blEl) {
+                    if (isWeekend) {
+                        blEl.innerHTML = `<div class="bl-main" style="opacity:0.6;font-style:italic">${bl}</div><div class="bl-range"><span class="opt">↓${blO}</span><span class="pes">↑${blP}</span></div>`;
+                    } else {
+                        blEl.innerHTML = `<div class="bl-main">${bl}</div><div class="bl-range"><span class="opt">↓${blO}</span><span class="pes">↑${blP}</span></div>`;
+                    }
+                }
+
+                predLabels.push(fmtD(d));
+                predBL.push(bl); predBLO.push(blO); predBLP.push(blP);
+            }
+
+            // --- Diagram: historikus + jóslat összefűzés ---
+            const allLabels = [...histLabels, ...predLabels];
+            const hLen = histLabels.length;
+            const pLen = predLabels.length;
+
+            // Valós backlog: historikus dátumokon van érték, jóslatnál null
+            const realLine = [...histBL, ...new Array(pLen).fill(null)];
+            // Jóslat backlog: historikusnál null, de az utolsó valós pontot is tartalmazza az átmenethez
+            const predLine = [...new Array(Math.max(0, hLen - 1)).fill(null), hLen > 0 ? histBL[hLen - 1] : lastBL, ...predBL];
+            const optLine = [...new Array(Math.max(0, hLen - 1)).fill(null), hLen > 0 ? histBL[hLen - 1] : lastBL, ...predBLO];
+            const pesLine = [...new Array(Math.max(0, hLen - 1)).fill(null), hLen > 0 ? histBL[hLen - 1] : lastBL, ...predBLP];
+
+            drawChart(allLabels, realLine, predLine, optLine, pesLine);
+        }
+
+        function drawChart(labels, real, pred, opt, pes) {
+            const ctx = document.getElementById('chart').getContext('2d');
+            if (myChart) myChart.destroy();
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Valós backlog',
+                            data: real,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16,185,129,.08)',
+                            fill: false,
+                            borderWidth: 2.5,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#10b981',
+                            tension: .3,
+                            spanGaps: true
+                        },
+                        {
+                            label: 'Pesszimista',
+                            data: pes,
+                            borderColor: 'rgba(239,68,68,.35)',
+                            backgroundColor: 'rgba(239,68,68,.05)',
+                            fill: '+1',
+                            borderDash: [4, 4],
+                            borderWidth: 1.5,
+                            pointRadius: 0,
+                            tension: .4,
+                            spanGaps: false
+                        },
+                        {
+                            label: 'Fiktív backlog',
+                            data: pred,
+                            borderColor: '#6366f1',
+                            backgroundColor: 'rgba(99,102,241,.08)',
+                            fill: false,
+                            borderWidth: 3,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#6366f1',
+                            tension: .4,
+                            spanGaps: false
+                        },
+                        {
+                            label: 'Optimista',
+                            data: opt,
+                            borderColor: 'rgba(16,185,129,.35)',
+                            backgroundColor: 'rgba(16,185,129,.05)',
+                            fill: '-1',
+                            borderDash: [4, 4],
+                            borderWidth: 1.5,
+                            pointRadius: 0,
+                            tension: .4,
+                            spanGaps: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { size: 11 } } }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                        x: { grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 45 } }
+                    }
+                }
+            });
+        }
+
+        // Auto-recalculate a finomhangolás és táblázat inputjainál
+        let recalcTimer = null;
+        function scheduleRecalc() {
+            clearTimeout(recalcTimer);
+            recalcTimer = setTimeout(() => {
+                if (lastReal && model.beerkezett) calculate();
+            }, 600);
+        }
+        // Tuning panel inputok + Wednesday boost
+        ['lagDamp', 'optP', 'pesP', 'fDays', 'histDays', 'wedBoost', 'friReduce'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', () => {
+                if (id === 'fDays' || id === 'histDays') {
+                    // Táblázat újraépítés is kell
+                    clearTimeout(recalcTimer);
+                    recalcTimer = setTimeout(() => {
+                        if (lastReal) { renderTable(); calculate(); }
+                    }, 800);
+                } else {
+                    scheduleRecalc();
+                }
+            });
+        });
+        // Táblázat inputok (kiküldött, kapacitás) - delegált eseménykezelő
+        document.getElementById('tb').addEventListener('input', scheduleRecalc);
+
+        function exportExcel() {
+            if (!lastReal) return alert('Nincs exportálható adat!');
+            const table = document.querySelector('table');
+            const data = [];
+
+            // Fejlécek
+            const headers = [];
+            table.querySelectorAll('thead th').forEach(th => headers.push(th.innerText.replace(' ✏️', '')));
+            data.push(headers);
+
+            // Sorok
+            table.querySelectorAll('tbody tr').forEach(tr => {
+                const row = [];
+                tr.querySelectorAll('td').forEach((td, idx) => {
+                    const input = td.querySelector('input');
+                    if (input) {
+                        row.push(Number(input.value) || 0);
+                    } else {
+                        // Backlog oszlop (tartalmazhat opt/pes tartományt)
+                        if (idx === headers.length - 1) {
+                            const mainVal = td.querySelector('.bl-main');
+                            if (mainVal) {
+                                row.push(Number(mainVal.innerText) || 0);
+                            } else {
+                                row.push(td.innerText);
+                            }
+                        } else {
+                            row.push(td.innerText);
+                        }
+                    }
+                });
+                data.push(row);
+            });
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            XLSX.utils.book_append_sheet(wb, ws, "Tervezett Adatok");
+            XLSX.writeFile(wb, `uko_tervezes_${ds(new Date())}.xlsx`);
+        }
+        // Lucide ikonok inicializálása
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>
