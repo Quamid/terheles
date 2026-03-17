@@ -362,6 +362,11 @@
             color: #94a3b8
         }
 
+        .hol-row {
+            background: #fee2e2 !important;
+            color: #dc2626 !important;
+        }
+
         .real {
             background: #ecfdf5
         }
@@ -475,6 +480,9 @@
                     <button class="btn" onclick="exportExcel()" style="background:#10b981">
                         <i data-lucide="file-spreadsheet"></i> Export Excel
                     </button>
+                    <button class="btn" onclick="resetManualEdits()" style="background:#ef4444">
+                        <i data-lucide="rotate-ccw"></i> Törlés
+                    </button>
                 </div>
             </div>
             <div class="row2">
@@ -516,9 +524,34 @@
                                 <span style="font-size:12px;color:#64748b;font-weight:700">%</span>
                             </div>
                         </div>
+                        <div class="sc">
+                            <div class="sl" style="white-space:nowrap">Átl. Össz Levelező</div>
+                            <div class="sv" id="sLevAll">—</div>
+                            <div style="font-size:9px;color:#64748b;margin-top:2px" id="sLevDetail"></div>
+                        </div>
                     </div>
                     <div id="chartBox"><canvas id="chart"></canvas></div>
                     <div class="lag-section" id="lagSection"></div>
+                    <div class="gc" style="margin-top:20px;padding:0;overflow:hidden;border:1px solid #e2e8f0;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,0.03);">
+                        <div onclick="toggleBlCalc()" style="cursor:pointer;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;user-select:none;background:linear-gradient(to right, #ffffff, #f8fafc);">
+                            <div style="display:flex;align-items:center;gap:14px;">
+                                <div style="background:linear-gradient(135deg, var(--p), var(--s));color:#fff;padding:8px;border-radius:10px;display:flex;box-shadow:0 4px 10px rgba(99,102,241,0.25);">
+                                </div>
+                                <div>
+                                    <div style="font-weight:700;font-size:15px;color:#1e293b;letter-spacing:-0.3px;">Backlog csökkentés</div>
+                                    <div style="font-size:10px;color:#64748b;font-weight:600;margin-top:2px;letter-spacing:0.3px;text-transform:uppercase;">Összes levél kategória / Össz. levelező</div>
+                                </div>
+                            </div>
+                            <div style="background:#f1f5f9;border-radius:50%;padding:4px;"><i data-lucide="chevron-down" id="blCalcIcon" style="width:18px;height:18px;color:#64748b;transition:transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);"></i></div>
+                        </div>
+                        <div id="blCalcBody" style="display:none;border-top:1px solid #e2e8f0;padding:20px 20px 24px;background:#f8fafc;">
+                            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;background:#fff;padding:12px 16px;border-radius:12px;border:1px solid #e2e8f0;box-shadow:0 2px 4px rgba(0,0,0,0.02);">
+                                <label style="font-size:13px;font-weight:700;color:#334155;flex-grow:1;">Célzott napi backlog csökkenés (db):</label>
+                                <input type="number" id="blTarget" value="50" min="1" max="500" style="width:80px;padding:8px;border-radius:8px;border:2px solid #e2e8f0;outline:none;font-size:14px;font-family:inherit;text-align:center;font-weight:800;color:var(--p);background:#f1f5f9;transition:0.2s;">
+                            </div>
+                            <div id="blCalcResult"></div>
+                        </div>
+                    </div>
                 </div>
                 <div class="panel" id="tunePanel">
                     <h3 style="display:flex;align-items:center;gap:7px;font-size:13px;margin-bottom:14px">
@@ -569,6 +602,10 @@
                             <th>ÜSZI</th>
                             <th>Video</th>
                             <th class="th-edit">Megválaszolt levél (db) ✏️</th>
+                            <th style="background:#0369a1">HD</th>
+                            <th style="background:#0369a1">UD</th>
+                            <th style="background:#0369a1">JS</th>
+                            <th style="background:#0284c7">Össz Lev.</th>
                             <th>Backlog - Feldolgozandó (db)</th>
                         </tr>
                     </thead>
@@ -583,7 +620,7 @@
         const CH_COLOR = { beerkezett: '#6366f1', cc: '#ec4899', uszi: '#f59e0b', video: '#10b981' };
         const DOW = ['V', 'H', 'K', 'Sze', 'Cs', 'P', 'Szo'];
         const MAX_LAG = 14;
-        let raw = [], dateMap = {}, model = {}, lastReal = null, lastBL = 0, myChart = null;
+        let raw = [], dateMap = {}, manualMap = {}, manualAvgInc = null, model = {}, lastReal = null, lastBL = 0, myChart = null;
         document.getElementById('fi').addEventListener('change', e => {
             const f = e.target.files[0]; if (!f) return;
             const r = new FileReader();
@@ -612,7 +649,10 @@
                     uszi: Math.round(Number(r['ÜSZI rögzített hangfájlok száma']) || 0),
                     video: Math.round(Number(r['Video hívások száma']) || 0),
                     kapacitas: Math.round(Number(r['Levelezés megválaszolt']) || 0),
-                    backlog: r['Levelezés feldolgozandó'] != null ? Math.round(Number(r['Levelezés feldolgozandó'])) : null
+                    backlog: r['Levelezés feldolgozandó'] != null ? Math.round(Number(r['Levelezés feldolgozandó'])) : null,
+                    levHD: r['Tényleges levélírók száma HD'] != null ? Math.round(Number(r['Tényleges levélírók száma HD'])) : null,
+                    levUD: r['Tényleges levélírók száma UD'] != null ? Math.round(Number(r['Tényleges levélírók száma UD'])) : null,
+                    levJS: r['Tényleges levélírók száma jogsegély'] != null ? Math.round(Number(r['Tényleges levélírók száma jogsegély'])) : null
                 };
             }).filter(x => x.date && !isNaN(x.date.getTime())).sort((a, b) => a.date - b.date);
             dateMap = {};
@@ -627,25 +667,55 @@
             const day = String(d.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
         }
+        function isHol(d) {
+            const h = [
+                "2025-01-01", "2025-03-15", "2025-04-18", "2025-04-21", "2025-05-01", "2025-06-09", "2025-08-20", "2025-10-23", "2025-11-01", "2025-12-24", "2025-12-25", "2025-12-26",
+                "2026-01-01", "2026-03-15", "2026-04-03", "2026-04-06", "2026-05-01", "2026-05-25", "2026-08-20", "2026-10-23", "2026-11-01", "2026-12-24", "2026-12-25", "2026-12-26"
+            ];
+            return h.includes(ds(d));
+        }
         function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r }
         function learnModel() {
             if (!lastReal || raw.length < 30) return;
-            const wd = raw.filter(x => { const dw = x.date.getDay(); return dw >= 1 && dw <= 5; });
+            const recentLimit = addDays(lastReal, -42);
+            const recentVideoLimit = addDays(lastReal, -14);
+            const wdDefault = raw.filter(x => { const dw = x.date.getDay(); return dw >= 1 && dw <= 5 && x.date >= recentLimit; });
+            const wdVideo = raw.filter(x => { const dw = x.date.getDay(); return dw >= 1 && dw <= 5 && x.date >= recentVideoLimit; });
+            
             model = {};
             CH.forEach(ch => {
+                const wd = (ch === 'video') ? wdVideo : wdDefault;
                 const sums = {}, cnts = {};
                 for (let d = 1; d <= 5; d++) { sums[d] = 0; cnts[d] = 0; }
-                wd.forEach(x => { const dw = x.date.getDay(); if (x[ch] >= 0) { sums[dw] += x[ch]; cnts[dw]++; } });
+                wd.forEach(x => { 
+                    const dw = x.date.getDay(); 
+                    if (x[ch] >= 0) { 
+                        let weight = 1;
+                        if (ch === 'video' && x.date >= addDays(lastReal, -3)) weight = 5;
+                        sums[dw] += x[ch] * weight; 
+                        cnts[dw] += weight; 
+                    } 
+                });
                 const base = {};
-                for (let d = 1; d <= 5; d++) base[d] = cnts[d] > 0 ? sums[d] / cnts[d] : 0;
+                if (ch === 'beerkezett') {
+                    for (let d = 1; d <= 5; d++) base[d] = cnts[d] > 0 ? sums[d] / cnts[d] : 0;
+                } else {
+                    let sO = 0, cO = 0;
+                    for (let d = 2; d <= 5; d++) { sO += sums[d]; cO += cnts[d]; }
+                    const otherAvg = cO > 0 ? sO / cO : (cnts[1] > 0 ? sums[1] / cnts[1] : 0);
+                    for (let d = 1; d <= 5; d++) base[d] = otherAvg;
+                }
+                
                 let wkndBase = 0;
                 if (ch === 'beerkezett') {
-                    const we = raw.filter(x => (x.date.getDay() === 0 || x.date.getDay() === 6) && x[ch] > 0);
+                    const we = raw.filter(x => (x.date.getDay() === 0 || x.date.getDay() === 6) && x[ch] > 0 && x.date >= recentLimit);
                     if (we.length > 0) wkndBase = we.reduce((s, x) => s + x[ch], 0) / we.length;
                 }
+                
                 let totalMag = 0, magCount = 0;
                 wd.forEach(x => {
-                    const residual = x[ch] - (base[x.date.getDay()] || 0);
+                    const bVal = (ch === 'beerkezett') ? (base[x.date.getDay()] || 0) : (base[1] || 0);
+                    const residual = x[ch] - bVal;
                     let laggedSendSum = 0, lagCount = 0;
                     for (let k = 1; k <= MAX_LAG; k++) {
                         const past = dateMap[ds(addDays(x.date, -k))];
@@ -656,9 +726,12 @@
                         magCount++;
                     }
                 });
+                
                 let learnedMag = magCount > 10 ? Math.max(0, totalMag / magCount) : 0;
-                const minMag = { cc: 0.005, uszi: 0.003, video: 0.004, beerkezett: 0.01 };
+                // Megemelt beérkező levél visszacsatolás (10%), hogy a 15k kiküldés látszódjon a backlogon
+                const minMag = { cc: 0.01, uszi: 0.008, video: 0.06, beerkezett: 0.10 };
                 if (learnedMag < (minMag[ch] || 0)) learnedMag = minMag[ch] || 0.005;
+                
                 const shapes = {
                     cc: k => Math.pow(Math.max(0, k - 1), 1.2) * Math.exp(-(k - 1) / 2.5),
                     uszi: k => Math.pow(Math.max(0, k - 0.5), 1.0) * Math.exp(-(k - 0.5) / 3.0),
@@ -679,21 +752,36 @@
                 }
                 let monBoost = 1.0;
                 if (ch !== 'beerkezett') {
-                    const monDays = wd.filter(x => x.date.getDay() === 1);
-                    const otherDays = wd.filter(x => x.date.getDay() >= 2 && x.date.getDay() <= 5);
-                    const monAvg = monDays.length > 0 ? monDays.reduce((s, x) => s + x[ch], 0) / monDays.length : 0;
-                    const otherAvg = otherDays.length > 0 ? otherDays.reduce((s, x) => s + x[ch], 0) / otherDays.length : 0;
-                    monBoost = (monAvg > 0 && otherAvg > 0) ? Math.min(1.25, monAvg / otherAvg) : 1.0;
+                    const monAvg = cnts[1] > 0 ? sums[1] / cnts[1] : (base[1] || 0);
+                    const b = base[1] || 1;
+                    monBoost = monAvg / b;
+                    if (ch === 'video' && monBoost < 1.4) monBoost = 1.4; // Reálisabb 1.4x-es hétfő
+                    if ((ch === 'cc' || ch === 'uszi') && monBoost < 1.3) monBoost = 1.3;
+                    monBoost = Math.min(2.5, monBoost);
                 }
                 model[ch] = { base, wkndBase, lag, monBoost };
             });
-            const gAvg = k => Math.round(Object.values(model[k].base).reduce((a, b) => a + b, 0) / 5);
+            const gAvg = k => {
+                const b = model[k].base;
+                if (k === 'beerkezett') return Math.round(Object.values(b).reduce((a,b)=>a+b,0)/5);
+                const avgNormal = b[2];
+                return Math.round((avgNormal * 4 + avgNormal * (model[k].monBoost || 1)) / 5);
+            };
             document.getElementById('sInc').textContent = gAvg('beerkezett');
             document.getElementById('sCC').textContent = gAvg('cc');
             document.getElementById('sUszi').textContent = gAvg('uszi');
             document.getElementById('sVid').textContent = gAvg('video');
-            const kapAvg = raw.filter(x => x.date.getDay() >= 1 && x.date.getDay() <= 5 && x.kapacitas > 0);
+            const kapAvg = raw.filter(x => x.date.getDay() >= 1 && x.date.getDay() <= 5 && x.kapacitas > 0 && x.date >= recentLimit);
             document.getElementById('sKap').textContent = kapAvg.length ? Math.round(kapAvg.reduce((s, x) => s + x.kapacitas, 0) / kapAvg.length) : '-';
+            const levRows = raw.filter(x => x.levHD !== null && x.date >= recentLimit);
+            if (levRows.length > 0) {
+                const avgHD = Math.round(levRows.reduce((s,x) => s + (x.levHD||0), 0) / levRows.length * 10) / 10;
+                const avgUD = Math.round(levRows.reduce((s,x) => s + (x.levUD||0), 0) / levRows.length * 10) / 10;
+                const avgJS = Math.round(levRows.reduce((s,x) => s + (x.levJS||0), 0) / levRows.length * 10) / 10;
+                const avgAll = Math.round((avgHD + avgUD + avgJS) * 10) / 10;
+                document.getElementById('sLevAll').textContent = avgAll;
+                document.getElementById('sLevDetail').textContent = `HD:${avgHD} UD:${avgUD} JS:${avgJS}`;
+            }
             const wedBoosts = [];
             ['cc', 'uszi', 'video'].forEach(ch => {
                 const avg5 = Object.values(model[ch].base).reduce((a, b) => a + b, 0) / 5;
@@ -738,24 +826,30 @@
             const fDays = parseInt(document.getElementById('fDays').value) || 21;
             const start = addDays(lastReal, -histDays);
             const end = addDays(lastReal, fDays);
-            const kapAvg = raw.filter(x => x.date.getDay() >= 1 && x.date.getDay() <= 5 && x.kapacitas > 0);
+            const recentLimit = addDays(lastReal, -42);
+            const kapAvg = raw.filter(x => x.date.getDay() >= 1 && x.date.getDay() <= 5 && x.kapacitas > 0 && x.date >= recentLimit);
             const defKap = kapAvg.length ? Math.round(kapAvg.reduce((s, x) => s + x.kapacitas, 0) / kapAvg.length) : 500;
             const todayStr = ds(new Date());
             for (let d = new Date(start); d <= end; d = addDays(d, 1)) {
-                const dStr = ds(d), dw = d.getDay(), isWe = dw === 0 || dw === 6;
+                const dStr = ds(d), dw = d.getDay(), isWe = dw === 0 || dw === 6, isH = isHol(d);
                 const isPast = d <= lastReal;
                 const isToday = dStr === todayStr;
                 const rd = dateMap[dStr];
                 const tr = document.createElement('tr');
                 if (isToday) tr.className = 'today-row';
+                else if (isH) tr.className = 'hol-row';
                 else if (isWe) tr.className = 'wknd';
                 else if (isPast) tr.className = 'real';
                 else tr.className = 'pred';
-                if (dw === 3 && !isWe) tr.classList.add('wed-row');
-                if (dw === 5 && !isWe) tr.classList.add('fri-row');
+                if (dw === 3 && !isWe && !isH) tr.classList.add('wed-row');
+                if (dw === 5 && !isWe && !isH) tr.classList.add('fri-row');
                 const badge = isPast ? '<span class="badge b-r">TÉNY</span>' : '<span class="badge b-p">FIKTÍV</span>';
-                const kik = rd ? rd.kikuldott : 0;
-                const kap = rd && isPast ? rd.kapacitas : (isWe ? 0 : defKap);
+                
+                // DATA PERSISTENCE: Check manual edits first, then uploaded data, then default
+                const mm = manualMap[dStr] || {};
+                const kik = mm.kikuldott !== undefined ? mm.kikuldott : (rd ? rd.kikuldott : 0);
+                const kap = mm.kapacitas !== undefined ? mm.kapacitas : (rd && isPast ? rd.kapacitas : ((isWe || isH) ? 0 : defKap));
+                
                 const fmtDate = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
                 tr.innerHTML = `
    <td style="text-align:center;font-weight:600">${fmtDate}</td>
@@ -767,6 +861,10 @@
    <td id="uz-${dStr}">${rd && isPast ? rd.uszi : '—'}</td>
    <td id="vi-${dStr}">${rd && isPast ? rd.video : '—'}</td>
    <td><input class="tinp" type="number" id="c-${dStr}" value="${kap}"></td>
+   <td id="hd-${dStr}" style="color:#0369a1;font-weight:600">${rd && isPast && rd.levHD !== null ? rd.levHD : '—'}</td>
+   <td id="ud-${dStr}" style="color:#0369a1;font-weight:600">${rd && isPast && rd.levUD !== null ? rd.levUD : '—'}</td>
+   <td id="js-${dStr}" style="color:#0369a1;font-weight:600">${rd && isPast && rd.levJS !== null ? rd.levJS : '—'}</td>
+   <td id="la-${dStr}" style="color:#0284c7;font-weight:800">${rd && isPast && rd.levHD !== null ? (rd.levHD||0)+(rd.levUD||0)+(rd.levJS||0) : '—'}</td>
    <td id="bl-${dStr}" class="bl-main">${rd && isPast && rd.backlog !== null ? rd.backlog : '—'}</td>`;
                 tb.appendChild(tr);
             }
@@ -780,10 +878,10 @@
             return m;
         }
         function predictCh(ch, date, sentMap) {
-            const dw = date.getDay(), isWe = dw === 0 || dw === 6;
+            const dw = date.getDay(), isWe = dw === 0 || dw === 6, isH = isHol(date);
             if (!model[ch]) return 0;
-            if (isWe && ch !== 'beerkezett') return 0;
-            let val = isWe ? model[ch].wkndBase : (model[ch].base[dw] || 0);
+            if ((isWe || isH) && ch !== 'beerkezett') return 0;
+            let val = (isWe || isH) ? model[ch].wkndBase : (model[ch].base[dw] || 0);
             if (dw === 1 && ch !== 'beerkezett') {
                 const monBoost = model[ch].monBoost || 1.0;
                 val *= monBoost;
@@ -797,21 +895,10 @@
                 val *= (1 - reduce);
             }
             const damp = parseFloat(document.getElementById('lagDamp').value) || 0.5;
-            if (ch === 'beerkezett') {
-                const lagCoeff = 0.03 * damp;
-                let lagImpact = 0;
-                for (let k = 1; k <= MAX_LAG; k++) {
-                    const past = ds(addDays(date, -k));
-                    const sent = sentMap[past] || 0;
-                    lagImpact += sent * Math.exp(-k / 5) * lagCoeff;
-                }
-                val += lagImpact;
-            } else {
-                for (let k = 1; k <= MAX_LAG; k++) {
-                    const past = ds(addDays(date, -k));
-                    const sent = sentMap[past] || 0;
-                    val += model[ch].lag[k] * sent * damp;
-                }
+            for (let k = 1; k <= MAX_LAG; k++) {
+                const past = ds(addDays(date, -k));
+                const sent = sentMap[past] || 0;
+                val += model[ch].lag[k] * sent * damp;
             }
             return Math.max(0, Math.round(val));
         }
@@ -890,6 +977,107 @@
             const optLine = [...new Array(Math.max(0, hLen - 1)).fill(null), hLen > 0 ? histBL[hLen - 1] : lastBL, ...predBLO];
             const pesLine = [...new Array(Math.max(0, hLen - 1)).fill(null), hLen > 0 ? histBL[hLen - 1] : lastBL, ...predBLP];
             drawChart(allLabels, realLine, predLine, optLine, pesLine);
+            // Backlog csökkentés kalkulátor
+            const blCalcEl = document.getElementById('blCalcResult');
+            if (blCalcEl) {
+                const recentLimit = addDays(lastReal, -42);
+                const levRows = raw.filter(x => x.levHD !== null && x.kapacitas > 0 && x.date >= recentLimit);
+                if (levRows.length > 5) {
+                    const perPerson = levRows.map(x => {
+                        const total = (x.levHD||0) + (x.levUD||0) + (x.levJS||0);
+                        return total > 0 ? x.kapacitas / total : 0;
+                    }).filter(v => v > 0);
+                    const avgPerPerson = perPerson.reduce((a,b) => a+b, 0) / perPerson.length;
+                    const blTargetVal = parseInt(document.getElementById('blTarget').value) || 50;
+
+                    const autoAvgInc = Math.round(Object.values(model.beerkezett.base).reduce((a,b)=>a+b,0)/5);
+                    const avgInc = manualAvgInc !== null ? manualAvgInc : autoAvgInc;
+                    
+                    const neededKap = avgInc + blTargetVal;
+                    const neededPeople = Math.ceil(neededKap / avgPerPerson);
+                    const avgLevNow = Math.round(levRows.reduce((s,x) => s + (x.levHD||0) + (x.levUD||0) + (x.levJS||0), 0) / levRows.length);
+                    const extraPeople = Math.max(0, neededPeople - avgLevNow);
+                    const curTotalKap = Math.round(avgLevNow * avgPerPerson);
+                    
+                    const limit30 = addDays(lastReal, -30);
+                    const rows30 = raw.filter(x => x.beerkezett > 0 && x.date >= limit30 && x.date.getDay() !== 0 && x.date.getDay() !== 6);
+                    const avg30 = rows30.length > 0 ? Math.round(rows30.reduce((s, x) => s + x.beerkezett, 0) / (rows30.length || 1)) : 0;
+                    
+                    const baseDiff = curTotalKap - avgInc;
+                    const matekTxt = baseDiff >= 0 
+                        ? `<b>Trend:</b> Jelenleg napi <b>${baseDiff}</b> darabbal csökken a backlog. A kívánt <b>${blTargetVal}</b>-as célhoz még <b>${Math.max(0, blTargetVal - baseDiff)}</b> extra napi kapacitás kell.`
+                        : `<b>Trend:</b> Jelenleg napi <b>${Math.abs(baseDiff)}</b> darabbal NŐ a backlog. A kívánt <b>${blTargetVal}</b>-as célhoz összesen <b>${Math.abs(baseDiff) + blTargetVal}</b> extra napi kapacitás kell.`;
+
+                    const boxBg = extraPeople > 0 ? '#fff1f2' : '#f0fdf4';
+                    const boxBorder = extraPeople > 0 ? '#fecdd3' : '#bbf7d0';
+                    const boxShadow = extraPeople > 0 ? 'rgba(244,63,94,0.05)' : 'rgba(34,197,94,0.05)';
+                    const dashColor = extraPeople > 0 ? '#fda4af' : '#86efac';
+                    const textColor = extraPeople > 0 ? '#9f1239' : '#166534';
+                    const mainColor = extraPeople > 0 ? '#e11d48' : '#15803d';
+                    const badgeBg = extraPeople > 0 ? '#e11d48' : '#16a34a';
+
+                    // SURGICAL UPDATE: Only update values if already rendered to keep focus
+                    const existingBox = document.getElementById('resResBox');
+                    if (existingBox) {
+                        existingBox.style.background = boxBg;
+                        existingBox.style.borderColor = boxBorder;
+                        existingBox.style.boxShadow = `0 4px 6px -1px ${boxShadow}`;
+                        document.getElementById('resLine').style.borderBottomColor = dashColor;
+                        document.getElementById('resNeededLabel').style.color = textColor;
+                        document.getElementById('resNeededLabel').textContent = `Cél (${blTargetVal} db/nap) eléréséhez szükséges létszám:`;
+                        document.getElementById('resNeededMain').style.color = mainColor;
+                        document.getElementById('resNeededMain').innerHTML = `${neededPeople} fő <span style="font-size:12px;opacity:0.7;font-weight:400;letter-spacing:0;">(pontosan: ${(neededKap/avgPerPerson).toFixed(1)} fő)</span>`;
+                        document.getElementById('resCurAvg').style.color = textColor;
+                        document.getElementById('resCurAvg').innerHTML = `Jelenlegi átlag: <b style="font-weight:700;">${avgLevNow} fő</b> <span style="font-size:11px;opacity:0.8;">(~${curTotalKap} levél, ${avgPerPerson.toFixed(1)}/fő)</span>`;
+                        document.getElementById('resMatek').innerHTML = matekTxt;
+                        const bVal = document.getElementById('resExtraMain');
+                        bVal.style.background = badgeBg;
+                        bVal.textContent = `${extraPeople > 0 ? '+' : ''}${extraPeople} fő kell még`;
+                    } else {
+                        blCalcEl.innerHTML = `
+                            <div style="font-size:11px;color:#64748b;margin-bottom:12px;font-style:italic;line-height:1.4;">
+                                *A számítás az <b>utolsó rögzített Excel adatból</b> (backlog szint) indul ki, az <b>elmúlt 6 hét</b> átlagos produktivitását és létszámát veszi alapul.
+                            </div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+                                <div style="background:#fff;padding:14px;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 2px 4px rgba(0,0,0,0.02);">
+                                    <div style="font-size:10px;color:#64748b;text-transform:uppercase;font-weight:700;margin-bottom:4px;letter-spacing:0.4px;">Átl. produktivitás</div>
+                                    <div style="font-size:20px;font-weight:800;color:#0ea5e9;">${Math.round(avgPerPerson)} <span style="font-size:12px;font-weight:600;color:#94a3b8;text-transform:none;">levél/fő</span></div>
+                                </div>
+                                <div style="background:#fff;padding:14px;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 2px 4px rgba(0,0,0,0.02);">
+                                    <div style="font-size:10px;color:#64748b;text-transform:uppercase;font-weight:700;margin-bottom:4px;letter-spacing:0.4px;">Napi átlag beérkező</div>
+                                    <div style="display:flex;align-items:center;gap:4px;">
+                                        <input type="number" id="manualAvgInc" value="${avgInc}" style="width:70px;border:none;background:#f8fafc;font-size:20px;font-weight:800;color:#8b5cf6;font-family:inherit;padding:2px 4px;border-radius:4px;outline:none;border-bottom:2px dashed #ddd;">
+                                        <span style="font-size:12px;font-weight:600;color:#94a3b8;text-transform:none;">db</span>
+                                    </div>
+                                    <div id="resAvg30" style="font-size:9.5px;color:#94a3b8;margin-top:4px;font-weight:600;">30 napos munkanapi átl: ${avg30} db</div>
+                                </div>
+                            </div>
+                            <div id="resResBox" style="background:${boxBg};border:1px solid ${boxBorder};padding:18px;border-radius:12px;display:flex;flex-direction:column;gap:14px;box-shadow:0 4px 6px -1px ${boxShadow};">
+                                <div id="resMatek" style="font-size:11px;color:${textColor};line-height:1.5;padding:8px 12px;background:rgba(255,255,255,0.4);border-radius:8px;border:1px solid ${dashColor};">
+                                    ${matekTxt}
+                                </div>
+                                <div id="resLine" style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px dashed ${dashColor};padding-bottom:14px;">
+                                    <span id="resNeededLabel" style="font-size:13px;font-weight:600;color:${textColor};">Cél (${blTargetVal} db/nap) eléréséhez szükséges létszám:</span>
+                                    <span id="resNeededMain" style="font-size:22px;font-weight:800;color:${mainColor};letter-spacing:-0.5px;">${neededPeople} fő <span style="font-size:12px;opacity:0.7;font-weight:400;letter-spacing:0;">(pontosan: ${(neededKap/avgPerPerson).toFixed(1)} fő)</span></span>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;">
+                                    <span id="resCurAvg" style="font-size:13px;font-weight:500;color:${textColor};">Jelenlegi átlag: <b style="font-weight:700;">${avgLevNow} fő</b> <span style="font-size:11px;opacity:0.8;">(~${curTotalKap} levél, ${avgPerPerson.toFixed(1)}/fő)</span></span>
+                                    <span id="resExtraMain" style="font-size:13px;font-weight:700;background:${badgeBg};color:#fff;padding:6px 12px;border-radius:8px;box-shadow:0 2px 4px ${extraPeople > 0 ? 'rgba(225,29,72,0.3)' : 'rgba(22,163,74,0.3)'};letter-spacing:0.3px;">${extraPeople > 0 ? '+' : ''}${extraPeople} fő kell még</span>
+                                </div>
+                            </div>`;
+                    }
+                } else {
+                    blCalcEl.innerHTML = '<span style="color:#94a3b8">Nincs elég levelező adat a pontos számításhoz (min. 2025.09.02-től)</span>';
+                }
+                const mInp = document.getElementById('manualAvgInc');
+                if (mInp && !mInp.hasListener) {
+                    mInp.hasListener = true;
+                    mInp.addEventListener('input', e => {
+                        manualAvgInc = parseInt(e.target.value) || 0;
+                        calculate();
+                    });
+                }
+            }
         }
         function drawChart(labels, real, pred, opt, pes) {
             const ctx = document.getElementById('chart').getContext('2d');
@@ -962,6 +1150,14 @@
                 }
             });
         }
+        function resetManualEdits() {
+            if (confirm('Biztosan törlöd az összes kézzel beírt adatot (kiküldések, kapacitások, napi beérkező)?')) {
+                manualMap = {};
+                manualAvgInc = null;
+                renderTable();
+                calculate();
+            }
+        }
         let recalcTimer = null;
         function scheduleRecalc() {
             clearTimeout(recalcTimer);
@@ -969,7 +1165,7 @@
                 if (lastReal && model.beerkezett) calculate();
             }, 600);
         }
-        ['lagDamp', 'optP', 'pesP', 'fDays', 'histDays', 'wedBoost', 'friReduce'].forEach(id => {
+        ['lagDamp', 'optP', 'pesP', 'fDays', 'histDays', 'wedBoost', 'friReduce', 'blTarget'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.addEventListener('input', () => {
                 if (id === 'fDays' || id === 'histDays') {
@@ -982,7 +1178,16 @@
                 }
             });
         });
-        document.getElementById('tb').addEventListener('input', scheduleRecalc);
+        document.getElementById('tb').addEventListener('input', e => {
+            const inp = e.target;
+            if (inp.id) {
+                const dStr = inp.id.substring(2);
+                if (!manualMap[dStr]) manualMap[dStr] = {};
+                if (inp.id.startsWith('k-')) manualMap[dStr].kikuldott = parseInt(inp.value) || 0;
+                if (inp.id.startsWith('c-')) manualMap[dStr].kapacitas = parseInt(inp.value) || 0;
+            }
+            scheduleRecalc();
+        });
         function exportExcel() {
             if (!lastReal) return alert('Nincs exportálható adat!');
             const table = document.querySelector('table');
@@ -1015,6 +1220,17 @@
             const ws = XLSX.utils.aoa_to_sheet(data);
             XLSX.utils.book_append_sheet(wb, ws, "Tervezett Adatok");
             XLSX.writeFile(wb, `uko_tervezes_${ds(new Date())}.xlsx`);
+        }
+        function toggleBlCalc() {
+            const body = document.getElementById('blCalcBody');
+            const icon = document.getElementById('blCalcIcon');
+            if (body.style.display === 'none') {
+                body.style.display = 'block';
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                body.style.display = 'none';
+                icon.style.transform = 'rotate(0deg)';
+            }
         }
         lucide.createIcons();
     </script>
